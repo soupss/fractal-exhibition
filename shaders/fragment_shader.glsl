@@ -19,8 +19,12 @@ float sd_plane(vec3 p, vec3 n) {
     return dot(p, n);
 }
 
-float sd_round_box(vec3 p, vec3 b, float r)
-{
+float sd_box(vec3 p, vec3 b) {
+  vec3 q = abs(p) - b;
+  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+}
+
+float sd_round_box(vec3 p, vec3 b, float r) {
   vec3 q = abs(p) - b + r;
   return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0) - r;
 }
@@ -44,8 +48,8 @@ struct Hit {
 };
 
 // helper functions
-vec2 rotate_2d(vec2 p, float a) {
-    return p * mat2(cos(a), sin(a), -sin(a), cos(a));
+mat2 rotate_2d(float a) {
+    return mat2(cos(a), sin(a), -sin(a), cos(a));
 }
 
 // union operation
@@ -71,11 +75,23 @@ vec2 map(vec3 p) {
     }
 
     {
-        // gold tacka
-        vec3 q = p - vec3(0.0, 0.5, 0.0);
-        q.zx = rotate_2d(q.zx, t);
-        float d = sd_round_box(q, vec3(1.0, 0.2, 0.4), 0.1);
+        vec3 q = p - vec3(0.0, 2.0 + 0.2*sin(0.2*t), 0.0);
+        q.xz *= rotate_2d(0.6 * t);
+        q.yz *= rotate_2d(0.25 * t);
+        float scale = 2.0;
+        float scaled = 1.0;
+        for (int i = 0; i < 6; i++) {
+            q = abs(q);
+            q -= vec3(0.6);
+            q.xz *= rotate_2d(0.7*t);
+            q.xy *= rotate_2d(0.2*t);
+            q *= scale*0.8;
+            scaled *= scale;
+        }
+        float d = sd_box(q, vec3(1.0));
+        // d += 0.03*sin(5.0*t+15.0*q.x) + 0.03*sin(t + 15.0*q.y) + 0.02*sin(14*q.z);
         float m = MATERIAL_GOLD;
+        d /= scaled;
         hit = u_op(hit, vec2(d, m));
     }
 
@@ -87,7 +103,7 @@ vec2 march(vec3 ro, vec3 rd) {
     float d = 0.0;
     float material_id = -1.0;
 
-    for (int s = 0; s < 100; s++) {
+    for (int s = 0; s < 200; s++) {
         vec3 p = ro + d * rd;
         vec2 hit = map(p);
         material_id = hit.y;
@@ -160,7 +176,7 @@ float geometry(vec3 n, vec3 v, vec3 l, float roughness) {
     return masking * shadowing;
 }
 
-// cook-torrance implementation
+// cook-torrance lighting model
 vec3 lighting(vec3 p, vec3 n, vec3 v, Light light, Material material) {
     vec3 l = normalize(light.pos - p);
     vec3 h = normalize(v + l);
@@ -201,9 +217,9 @@ void main() {
     uv.x *= resolution.x/resolution.y;
 
     // ray origin, ray direction
-    vec3 ro = vec3(0.0, 2.0, 5.0);
+    vec3 ro = vec3(0.0, 3.0, 5.0);
     vec3 rd = normalize(vec3(uv, -1.0));
-    rd.zy = rotate_2d(rd.zy, -PI*0.09);
+    rd.zy *= rotate_2d(-PI*0.09);
 
     vec2 hit = march(ro, rd);
     float d = hit.x;
@@ -219,9 +235,9 @@ void main() {
 
         Material m = get_material(material_id);
 
-        vec3 light_pos = vec3(sin(t), 1.0, 0.5);
+        vec3 light_pos = vec3(sin(t), 4.0, 0.5);
         vec3 light_color = vec3(1.0, 1.0, 1.0);
-        Light lamp = Light(light_pos, light_color, 2.0);
+        Light lamp = Light(light_pos, light_color, 10.0);
 
         color = lighting(p, n, v, lamp, m);
     }

@@ -53,76 +53,80 @@ mat2 rotate_2d(float a) {
 }
 
 // union operation
-vec2 u_op(vec2 a, vec2 b) {
-    if (a.x < b.x) return a;
+Hit u_op(Hit a, Hit b) {
+    if (a.d < b.d) return a;
     else return b;
 }
 
-#define MATERIAL_MARBLE 0.0
-#define MATERIAL_GOLD 1.0
+// cosine palette, credit to inigo quilez
+vec3 palette(float k, vec3 a, vec3 b, vec3 c, vec3 d) {
+    return a + b * cos(6.28318 * (c * k + d));
+}
 
 // scene
-vec2 map(vec3 p) {
-    // x component is distance
-    // y component is material id
-    vec2 hit = vec2(1e10, -1.0);
+Hit map(vec3 p) {
+    Hit hit;
 
     {
         // ground
-        vec3 q = p;
-        hit.x = sd_plane(q, vec3(0.0, 1.0, 0.0));
-        hit.y = MATERIAL_MARBLE;
+        hit.d = sd_plane(p, vec3(0.0, 1.0, 0.0));
+        hit.material = Material(vec3(0.8, 0.8, 0.8), 0.5, 0.0);
     }
 
     {
-        vec3 q = p - vec3(0.0, 2.0 + 0.2*sin(0.2*t), 0.0);
-        q.xz *= rotate_2d(0.6 * t);
-        q.yz *= rotate_2d(0.25 * t);
+        vec3 q = p - vec3(0.0, 3.0 + 0.2*sin(0.2*t), 0.0);
+        q.xz *= rotate_2d(0.1 * t);
+        q.yz *= rotate_2d(0.05 * t);
+        q.xz *= rotate_2d(0.05 * -t);
+
         float scale = 2.0;
         float scaled = 1.0;
+        vec4 trap = vec4(1e10);
         for (int i = 0; i < 6; i++) {
             q = abs(q);
-            q -= vec3(0.6);
-            q.xz *= rotate_2d(0.7*t);
-            q.xy *= rotate_2d(0.2*t);
+            q -= vec3(1.0, 0.3, 0.7);
+            q.xz *= rotate_2d(0.2*t);
+            q.xy *= rotate_2d(0.15*t);
             q *= scale*0.8;
             scaled *= scale;
+            trap = min(trap, vec4(abs(q), length(q)));
         }
-        float d = sd_box(q, vec3(1.0));
-        // d += 0.03*sin(5.0*t+15.0*q.x) + 0.03*sin(t + 15.0*q.y) + 0.02*sin(14*q.z);
-        float m = MATERIAL_GOLD;
+        float d = sd_box(q, vec3(1.0, 1.2, 1.0));
         d /= scaled;
-        hit = u_op(hit, vec2(d, m));
+
+        vec3 color = palette(trap.z * 2.0, vec3(0.5), vec3(0.5), vec3(1.0), vec3(0.0, 0.1, 0.2));
+        Material m = Material(color, 0.4, 1.0);
+        hit = u_op(hit, Hit(d, m));
     }
 
     return hit;
 }
 
 // engine
-vec2 march(vec3 ro, vec3 rd) {
+Hit march(vec3 ro, vec3 rd) {
     float d = 0.0;
-    float material_id = -1.0;
+    Material m;
 
     for (int s = 0; s < 200; s++) {
         vec3 p = ro + d * rd;
-        vec2 hit = map(p);
-        material_id = hit.y;
+        Hit hit = map(p);
+        m = hit.material;
 
-        if (abs(hit.x) < 0.001) break;
-        d += hit.x;
+        if (abs(hit.d) < 0.001) break;
+        d += hit.d;
         if (d > DIST_MAX) break;
     }
 
-    return vec2(d, material_id);
+    return Hit(d, m);
 }
 
 vec3 normal(vec3 p) {
     // credit to inigo quilez
 
     vec2 e = vec2(0.0001, 0.0);
-    vec3 n = vec3(map(p+e.xyy).x - map(p-e.xyy).x,
-                  map(p+e.yxy).x - map(p-e.yxy).x,
-                  map(p+e.yyx).x - map(p-e.yyx).x);
+    vec3 n = vec3(map(p+e.xyy).d - map(p-e.xyy).d,
+                  map(p+e.yxy).d - map(p-e.yxy).d,
+                  map(p+e.yyx).d - map(p-e.yyx).d);
     return normalize(n);
 }
 
@@ -176,7 +180,6 @@ float geometry(vec3 n, vec3 v, vec3 l, float roughness) {
     return masking * shadowing;
 }
 
-// cook-torrance lighting model
 vec3 lighting(vec3 p, vec3 n, vec3 v, Light light, Material material) {
     vec3 l = normalize(light.pos - p);
     vec3 h = normalize(v + l);
@@ -206,40 +209,30 @@ vec3 lighting(vec3 p, vec3 n, vec3 v, Light light, Material material) {
     return brdf * radiance * max(dot(n, l), 0.0);
 }
 
-Material get_material(float id) {
-    if (id == MATERIAL_MARBLE) return Material(vec3(0.8, 0.8, 0.8), 0.5, 0.0);
-    else if (id == MATERIAL_GOLD) return Material(vec3(1.0, 0.89, 0.0), 0.2, 1.0);
-}
-
 // render
 void main() {
     vec2 uv = vertex_pos;
     uv.x *= resolution.x/resolution.y;
 
     // ray origin, ray direction
-    vec3 ro = vec3(0.0, 3.0, 5.0);
+    vec3 ro = vec3(0.0, 4.0, 4.5);
     vec3 rd = normalize(vec3(uv, -1.0));
     rd.zy *= rotate_2d(-PI*0.09);
 
-    vec2 hit = march(ro, rd);
-    float d = hit.x;
-    float material_id = hit.y;
+    Hit hit = march(ro, rd);
 
     vec3 color_bg = vec3(0.04);
     vec3 color = color_bg;
 
-    if (d < DIST_MAX) {
-        vec3 p = ro + d * rd;
+    if (hit.d < DIST_MAX) {
+        vec3 p = ro + hit.d * rd;
         vec3 n = normal(p); // NOTE: maybe calculate normal inside lighting function
         vec3 v = normalize(ro - p);
 
-        Material m = get_material(material_id);
-
-        vec3 light_pos = vec3(sin(t), 4.0, 0.5);
+        vec3 light_pos = vec3(sin(t), 5.0, 3.5);
         vec3 light_color = vec3(1.0, 1.0, 1.0);
-        Light lamp = Light(light_pos, light_color, 10.0);
-
-        color = lighting(p, n, v, lamp, m);
+        Light lamp = Light(light_pos, light_color, 5.0);
+        color = lighting(p, n, v, lamp, hit.material);
     }
 
     color = color / (color + vec3(1.0)); // tone mapping

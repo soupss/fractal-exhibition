@@ -172,8 +172,24 @@ int main() {
     GLint dt_loc = glGetUniformLocation(shader_program, "dt");
     GLfloat t_prev = 0.0f;
     GLfloat dt = 0.0f;
+
+    int frame_count = 0;
+    double fps_last_time = glfwGetTime();
+
     while(!glfwWindowShouldClose(window)) {
         process_input(window);
+
+        frame_count++;
+        double current_time = glfwGetTime();
+        if (current_time - fps_last_time >= 0.5) {
+            double fps = frame_count / (current_time - fps_last_time);
+            double ms_per_frame = 1000.0 / fps;
+            char window_title[128];
+            snprintf(window_title, sizeof(window_title), "FPS: %.1f | ms: %.2f", fps, ms_per_frame);
+            glfwSetWindowTitle(window, window_title);
+            frame_count = 0;
+            fps_last_time = current_time;
+        }
 
         glUseProgram(shader_program);
 

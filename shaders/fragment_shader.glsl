@@ -70,27 +70,41 @@ Hit map(vec3 p) {
     {
         // ground
         hit.d = sd_plane(p, vec3(0.0, 1.0, 0.0));
-        hit.material = Material(vec3(0.8, 0.8, 0.8), 0.5, 0.0);
+        hit.material = Material(vec3(1.0), 0.5, 0.0);
     }
 
     {
-        vec3 q = p - vec3(0.0, 3.0 + 0.2*sin(0.2*t), 0.0);
+        vec3 q = p - vec3(0.0, 3.5 + 0.35*sin(0.8*t), 0.0);
+
+        // domain repetition
+        float s = 11.0;
+        vec2 id = round(q.xz/s);
+        q.xz = q.xz - s*round(q.xz/s);
+
         q.xz *= rotate_2d(0.1 * t);
         q.yz *= rotate_2d(0.05 * t);
         q.xz *= rotate_2d(0.05 * -t);
 
+        // bounding sphere
+        float d_bound = sd_sphere(q, 3.1);
+        if (d_bound > 0.5) {
+            return u_op(hit, Hit(d_bound, Material(vec3(0.0), 0.0, 0.0)));
+        }
+
+        // kifs fractal
         float scale = 2.0;
         float scaled = 1.0;
         vec4 trap = vec4(1e10);
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 7; i++) {
             q = abs(q);
-            q -= vec3(1.0, 0.3, 0.7);
+            q -= vec3(1.0, 0.4, 0.7);
             q.xz *= rotate_2d(0.2*t);
             q.xy *= rotate_2d(0.15*t);
             q *= scale*0.8;
             scaled *= scale;
             trap = min(trap, vec4(abs(q), length(q)));
         }
+
         float d = sd_box(q, vec3(1.0, 1.2, 1.0));
         d /= scaled;
 
@@ -107,7 +121,7 @@ Hit march(vec3 ro, vec3 rd) {
     float d = 0.0;
     Material m;
 
-    for (int s = 0; s < 200; s++) {
+    for (int s = 0; s < 512; s++) {
         vec3 p = ro + d * rd;
         Hit hit = map(p);
         m = hit.material;
@@ -121,13 +135,37 @@ Hit march(vec3 ro, vec3 rd) {
 }
 
 vec3 normal(vec3 p) {
-    // credit to inigo quilez
+    vec2 e = vec2(1.0, -1.0) * 0.0001;
+    return normalize(
+        e.xyy * map(p + e.xyy).d +
+        e.yyx * map(p + e.yyx).d +
+        e.yxy * map(p + e.yxy).d +
+        e.xxx * map(p + e.xxx).d
+    );
+}
 
-    vec2 e = vec2(0.0001, 0.0);
-    vec3 n = vec3(map(p+e.xyy).d - map(p-e.xyy).d,
-                  map(p+e.yxy).d - map(p-e.yxy).d,
-                  map(p+e.yyx).d - map(p-e.yyx).d);
-    return normalize(n);
+float shadow(vec3 ro, vec3 rd) {
+    float d = 0.1;
+    float result = 1.0;
+    for (int i = 0; i < 512 && d < 64.0; i++) {
+        float h = map(ro + rd*d).d;
+        if (h < 0.001) return 0.0;
+        result = min(result, 64.0*h/d);
+        d += h;
+    }
+    return result;
+}
+
+float ambient_occlusion(vec3 p, vec3 n) {
+    float scale = 1.00;
+    float occlusion = 0.0;
+    for (int i = 1; i <= 4; i++) {
+        float h = 0.04*float(i);
+        float d = map(p + h*n).d;
+        occlusion += (h-d) * scale;
+        scale *= 0.95;
+    }
+    return 1.0 - clamp(occlusion, 0.0, 1.0);
 }
 
 // pbr, using cook torrance lighting model
@@ -215,13 +253,13 @@ void main() {
     uv.x *= resolution.x/resolution.y;
 
     // ray origin, ray direction
-    vec3 ro = vec3(0.0, 4.0, 4.5);
+    vec3 ro = vec3(0.0, 5.5, 5.0);
     vec3 rd = normalize(vec3(uv, -1.0));
     rd.zy *= rotate_2d(-PI*0.09);
 
     Hit hit = march(ro, rd);
 
-    vec3 color_bg = vec3(0.04);
+    vec3 color_bg = vec3(0.005);
     vec3 color = color_bg;
 
     if (hit.d < DIST_MAX) {
@@ -229,11 +267,23 @@ void main() {
         vec3 n = normal(p); // NOTE: maybe calculate normal inside lighting function
         vec3 v = normalize(ro - p);
 
-        vec3 light_pos = vec3(sin(t), 5.0, 3.5);
+        vec3 light_pos = vec3(5.0, 8.0, 7.0);
         vec3 light_color = vec3(1.0, 1.0, 1.0);
-        Light lamp = Light(light_pos, light_color, 5.0);
-        color = lighting(p, n, v, lamp, hit.material);
+        Light lamp = Light(light_pos, light_color, 200.0);
+        vec3 direct = lighting(p, n, v, lamp, hit.material);
+
+        vec3 l = normalize(light_pos - p);
+        float s = shadow(p, l);
+        direct *= s;
+
+        float ao = ambient_occlusion(p, n);
+        vec3 ambient = vec3(0.0001) * hit.material.albedo * ao;
+
+        color = direct + ambient;
     }
+
+    float fog_factor = smoothstep(DIST_MAX * 0.7, DIST_MAX, hit.d);
+    color = mix(color, color_bg, fog_factor);
 
     color = color / (color + vec3(1.0)); // tone mapping
     color = pow(color, vec3(1.0 / 2.2)); // gamma correction

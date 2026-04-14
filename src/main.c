@@ -10,17 +10,80 @@
 #include <cglm/cglm.h>
 
 typedef struct {
+    GLfloat pos[3];
+    GLfloat pitch;
+    GLfloat yaw;
+    GLfloat last_x;
+    GLfloat last_y;
+    int first_mouse; // Flag to prevent a sudden jump when the mouse first enters
+
+    vec3 forward;
+    vec3 right;
+    vec3 up;
+    float matrix[9];
+} Camera;
+
+typedef struct {
     GLfloat window_size[2];
     GLfloat cursor_pos[2];
-} UserData ;
+    Camera camera; // Embed the camera struct here
+} UserData;
 
 const char *FRAGMENT_SHADER_PATH = "shaders/fragment_shader.glsl";
 const char *VERTEX_SHADER_PATH = "shaders/vertex_shader.glsl";
+
+void camera_update(Camera *cam, float xpos, float ypos) {
+    if (cam->first_mouse) {
+        cam->last_x = xpos;
+        cam->last_y = ypos;
+        cam->first_mouse = 0;
+    }
+
+    float xoffset = xpos - cam->last_x;
+    float yoffset = cam->last_y - ypos; 
+    cam->last_x = xpos;
+    cam->last_y = ypos;
+
+    float sensitivity = 0.002f; 
+    cam->yaw += xoffset * sensitivity;
+    cam->pitch += yoffset * sensitivity;
+
+    if (cam->pitch > 1.55f) cam->pitch = 1.55f;
+    if (cam->pitch < -1.55f) cam->pitch = -1.55f;
+
+    cam->forward[0] = sin(cam->yaw) * cos(cam->pitch);
+    cam->forward[1] = sin(cam->pitch);
+    cam->forward[2] = -cos(cam->yaw) * cos(cam->pitch);
+    glm_vec3_normalize(cam->forward);
+
+    // 2. Calculate right and up vectors
+    vec3 world_up = {0.0f, 1.0f, 0.0f};
+    glm_vec3_cross(cam->forward, world_up, cam->right);
+    glm_vec3_normalize(cam->right);
+
+    glm_vec3_cross(cam->right, cam->forward, cam->up);
+    glm_vec3_normalize(cam->up);
+
+    // 3. Build the 3x3 Camera Matrix (Column-major order for OpenGL)
+    cam->matrix[0] = cam->right[0];
+    cam->matrix[1] = cam->right[1];
+    cam->matrix[2] = cam->right[2];
+
+    cam->matrix[3] = cam->up[0];
+    cam->matrix[4] = cam->up[1];
+    cam->matrix[5] = cam->up[2];
+
+    cam->matrix[6] = cam->forward[0];
+    cam->matrix[7] = cam->forward[1];
+    cam->matrix[8] = cam->forward[2];
+}
 
 void cursor_position_callback(GLFWwindow* _window, GLdouble _x, GLdouble _y) {
     UserData *ud = (UserData*)glfwGetWindowUserPointer(_window);
     ud->cursor_pos[0] =  (float)_x;
     ud->cursor_pos[1] = (float)_y;
+
+    camera_update(&ud->camera, (float)_x, (float)_y);
 }
 
 void window_size_callback(GLFWwindow* _window, int _width, int _height) {
@@ -30,9 +93,54 @@ void window_size_callback(GLFWwindow* _window, int _width, int _height) {
     ud->window_size[1] = (float)_height;
 }
 
-void process_input(GLFWwindow *_window) {
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        UserData *ud = (UserData*)glfwGetWindowUserPointer(window);
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        ud->camera.first_mouse = 1;
+    }
+}
+
+void process_input(GLFWwindow *_window, Camera *cam, float dt) {
     if(glfwGetKey(_window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(_window, GLFW_TRUE);
+    }
+
+    if(glfwGetKey(_window, GLFW_KEY_TAB) == GLFW_PRESS) {
+        glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+
+    float speed = 5.0f * dt;
+
+    if (glfwGetKey(_window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+        speed *= 5;
+    }
+
+    if (glfwGetKey(_window, GLFW_KEY_W) == GLFW_PRESS) {
+        cam->pos[0] += cam->forward[0] * speed;
+        cam->pos[1] += cam->forward[1] * speed;
+        cam->pos[2] += cam->forward[2] * speed;
+    }
+    if (glfwGetKey(_window, GLFW_KEY_S) == GLFW_PRESS) {
+        cam->pos[0] -= cam->forward[0] * speed;
+        cam->pos[1] -= cam->forward[1] * speed;
+        cam->pos[2] -= cam->forward[2] * speed;
+    }
+    if (glfwGetKey(_window, GLFW_KEY_A) == GLFW_PRESS) {
+        cam->pos[0] -= cam->right[0] * speed;
+        cam->pos[1] -= cam->right[1] * speed;
+        cam->pos[2] -= cam->right[2] * speed;
+    }
+    if (glfwGetKey(_window, GLFW_KEY_D) == GLFW_PRESS) {
+        cam->pos[0] += cam->right[0] * speed;
+        cam->pos[1] += cam->right[1] * speed;
+        cam->pos[2] += cam->right[2] * speed;
+    }
+    if (glfwGetKey(_window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        cam->pos[1] += speed;
+    }
+    if (glfwGetKey(_window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+        cam->pos[1] -= speed;
     }
 }
 
@@ -113,8 +221,6 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-    GLfloat cursor_pos[2] = {0.0, 0.0};
-
     GLFWwindow *window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "bomboclaatt", NULL, NULL);
     if (window == NULL) {
         glfwTerminate();
@@ -125,12 +231,22 @@ int main() {
         return -1;
     }
     UserData *ud = malloc(sizeof(UserData));
+    ud->camera.pos[0] = 0.0f;
+    ud->camera.pos[1] = 4.0f;
+    ud->camera.pos[2] = 5.0f;
+    ud->camera.pitch = 0.0f;
+    ud->camera.yaw = 0.0f;
+    ud->camera.first_mouse = 1; // Tell the camera it's the first time processing the mouse
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     glfwGetFramebufferSize(window, &ud->window_size[0], &ud->window_size[1]);
     glViewport(0, 0, ud->window_size[0], ud->window_size[1] );
     glfwSetWindowUserPointer(window, ud);
 
     glfwSetWindowSizeCallback(window, window_size_callback);
     glfwSetCursorPosCallback(window, cursor_position_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     GLuint vertex_shader = compile_shader(GL_VERTEX_SHADER, VERTEX_SHADER_PATH);
     GLuint fragment_shader = compile_shader(GL_FRAGMENT_SHADER, FRAGMENT_SHADER_PATH);
@@ -164,12 +280,12 @@ int main() {
 
     glUseProgram(shader_program);
 
-    GLint cursor_loc = glGetUniformLocation(shader_program, "cursor");
-    GLint resolution_loc = glGetUniformLocation(shader_program, "resolution");
+    GLint cursor_loc = glGetUniformLocation(shader_program, "u_cursor");
+    GLint resolution_loc = glGetUniformLocation(shader_program, "u_resolution");
     glUniform2fv(resolution_loc, 1, (float*)ud->window_size);
 
-    GLint t_loc = glGetUniformLocation(shader_program, "t");
-    GLint dt_loc = glGetUniformLocation(shader_program, "dt");
+    GLint t_loc = glGetUniformLocation(shader_program, "u_t");
+    GLint dt_loc = glGetUniformLocation(shader_program, "u_dt");
     GLfloat t_prev = 0.0f;
     GLfloat dt = 0.0f;
 
@@ -177,7 +293,13 @@ int main() {
     double fps_last_time = glfwGetTime();
 
     while(!glfwWindowShouldClose(window)) {
-        process_input(window);
+        process_input(window, &ud->camera, dt);
+
+        GLint ro_loc = glGetUniformLocation(shader_program, "u_ro");
+        glUniform3fv(ro_loc, 1, (float*)ud->camera.pos);
+
+        GLint cam_mat_loc = glGetUniformLocation(shader_program, "u_cam_matrix");
+        glUniformMatrix3fv(cam_mat_loc, 1, GL_FALSE, ud->camera.matrix);
 
         frame_count++;
         double current_time = glfwGetTime();
@@ -223,12 +345,12 @@ int main() {
                     glDeleteProgram(shader_program);
                     fragment_shader = new_fragment_shader;
                     shader_program = new_shader_program;
-                    cursor_loc = glGetUniformLocation(shader_program, "cursor");
-                    resolution_loc = glGetUniformLocation(shader_program, "resolution");
-                    t_loc = glGetUniformLocation(shader_program, "t");
-                    dt_loc = glGetUniformLocation(shader_program, "dt");
+                    cursor_loc = glGetUniformLocation(shader_program, "u_cursor");
+                    resolution_loc = glGetUniformLocation(shader_program, "u_resolution");
+                    t_loc = glGetUniformLocation(shader_program, "u_t");
+                    dt_loc = glGetUniformLocation(shader_program, "u_dt");
                 } else {
-                    glDeleteShader(new_fragment_shader); // Clean up failed linked shader
+                    glDeleteShader(new_fragment_shader);
                 }
             }
             shader_last_modified_prev = shader_last_modified;

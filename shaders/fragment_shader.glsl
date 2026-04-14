@@ -4,11 +4,13 @@ in vec2 vertex_pos;
 
 out vec4 frag_color;
 
-uniform vec2 resolution;
-uniform float t;
+uniform vec3 u_ro;
+uniform vec2 u_resolution;
+uniform mat3 u_cam_matrix;
+uniform float u_t;
 
 #define PI 3.1415926535897932384626433832795
-#define DIST_MAX 50
+#define DIST_MAX 100
 
 // primitives
 float sd_sphere(vec3 p, float r) {
@@ -74,32 +76,34 @@ Hit map(vec3 p) {
     }
 
     {
-        vec3 q = p - vec3(0.0, 3.5 + 0.35*sin(0.8*t), 0.0);
+        // metallic fractal
+        vec3 q = p - vec3(0.0, 3.5 + 0.35*sin(0.8*u_t), 0.0);
 
         // domain repetition
         float s = 11.0;
-        vec2 id = round(q.xz/s);
-        q.xz = q.xz - s*round(q.xz/s);
+        float id = round(q.x/s);
+        if (id<0 || id > 10) return hit;
+        q.x = q.x - s*round(q.x/s);
 
-        q.xz *= rotate_2d(0.1 * t);
-        q.yz *= rotate_2d(0.05 * t);
-        q.xz *= rotate_2d(0.05 * -t);
+        q.xz *= rotate_2d(0.1 * u_t);
+        q.yz *= rotate_2d(0.05 * u_t);
+        q.xz *= rotate_2d(0.05 * -u_t);
 
         // bounding sphere
-        float d_bound = sd_sphere(q, 3.1);
-        if (d_bound > 0.5) {
-            return u_op(hit, Hit(d_bound, Material(vec3(0.0), 0.0, 0.0)));
-        }
+        // float d_bound = sd_sphere(q, 3.1);
+        // if (d_bound > 0.5) {
+        //     return u_op(hit, Hit(d_bound, Material(vec3(0.0), 0.0, 0.0)));
+        // }
 
         // kifs fractal
         float scale = 2.0;
         float scaled = 1.0;
         vec4 trap = vec4(1e10);
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < id; i++) {
             q = abs(q);
             q -= vec3(1.0, 0.4, 0.7);
-            q.xz *= rotate_2d(0.2*t);
-            q.xy *= rotate_2d(0.15*t);
+            q.xz *= rotate_2d(0.2*u_t);
+            q.xy *= rotate_2d(0.15*u_t);
             q *= scale*0.8;
             scaled *= scale;
             trap = min(trap, vec4(abs(q), length(q)));
@@ -108,7 +112,7 @@ Hit map(vec3 p) {
         float d = sd_box(q, vec3(1.0, 1.2, 1.0));
         d /= scaled;
 
-        vec3 color = palette(trap.z * 2.0, vec3(0.5), vec3(0.5), vec3(1.0), vec3(0.0, 0.1, 0.2));
+        vec3 color = palette(trap.z * 4.0, vec3(0.5), vec3(0.5), vec3(1.0), vec3(0.0, 0.1, 0.2));
         Material m = Material(color, 0.4, 1.0);
         hit = u_op(hit, Hit(d, m));
     }
@@ -250,12 +254,11 @@ vec3 lighting(vec3 p, vec3 n, vec3 v, Light light, Material material) {
 // render
 void main() {
     vec2 uv = vertex_pos;
-    uv.x *= resolution.x/resolution.y;
+    uv.x *= u_resolution.x/u_resolution.y;
 
     // ray origin, ray direction
-    vec3 ro = vec3(0.0, 5.5, 5.0);
-    vec3 rd = normalize(vec3(uv, -1.0));
-    rd.zy *= rotate_2d(-PI*0.09);
+    vec3 ro = u_ro;
+    vec3 rd = u_cam_matrix * normalize(vec3(uv, 1.0));
 
     Hit hit = march(ro, rd);
 
@@ -264,10 +267,10 @@ void main() {
 
     if (hit.d < DIST_MAX) {
         vec3 p = ro + hit.d * rd;
-        vec3 n = normal(p); // NOTE: maybe calculate normal inside lighting function
+        vec3 n = normal(p);
         vec3 v = normalize(ro - p);
 
-        vec3 light_pos = vec3(5.0, 8.0, 7.0);
+        vec3 light_pos = ro + vec3(0.0, 2.0, 0.0);
         vec3 light_color = vec3(1.0, 1.0, 1.0);
         Light lamp = Light(light_pos, light_color, 200.0);
         vec3 direct = lighting(p, n, v, lamp, hit.material);

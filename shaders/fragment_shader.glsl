@@ -12,6 +12,18 @@ uniform float u_t;
 #define PI 3.1415926535897932384626433832795
 #define DIST_MAX 100
 
+#define NULL -1
+
+#define WORLD_HUB 0
+#define WORLD_LAVALAMP 1
+#define WORLD_FRACTAL 2
+
+#define MATERIAL_OPAQUE 0
+#define MATERIAL_PORTAL 1
+
+int g_world = WORLD_HUB;
+bool g_is_primary_ray = true;
+
 // primitives
 float sd_sphere(vec3 p, float r) {
     return length(p) - r;
@@ -31,8 +43,21 @@ float sd_round_box(vec3 p, vec3 b, float r) {
   return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0) - r;
 }
 
+float sd_ellipsoid(vec3 p, vec3 r) {
+  float k0 = length(p/r);
+  float k1 = length(p/(r*r));
+  return k0*(k0-1.0)/k1;
+}
+
+float sd_portal(vec3 p) {
+    return max(sd_ellipsoid(p, vec3(2.0, 3.7, 1.0)),
+            sd_box(p, vec3(2.0, 4.0, 0.02)));
+}
+
+
 // types
 struct Material {
+    int type;
     vec3 albedo;
     float roughness;
     float metallic;
@@ -47,6 +72,7 @@ struct Light {
 struct Hit {
     float d;
     Material material;
+    int world;
 };
 
 // helper functions
@@ -66,23 +92,62 @@ vec3 palette(float k, vec3 a, vec3 b, vec3 c, vec3 d) {
 }
 
 // scene
-Hit map(vec3 p) {
+Hit map_hub(vec3 p) {
     Hit hit;
 
     {
         // ground
         hit.d = sd_plane(p, vec3(0.0, 1.0, 0.0));
-        hit.material = Material(vec3(1.0), 0.5, 0.0);
+        hit.material = Material(MATERIAL_OPAQUE, vec3(1.0), 0.0, 0.0);
+    }
+
+    if (g_is_primary_ray) {
+        {
+            // portal to fractal world
+            vec3 q = p - vec3(0.0, 4.0, 0.0);
+            float d = sd_portal(q);
+            Material m = Material(MATERIAL_PORTAL, vec3(1.0), 0.0, 0.0);
+            hit = u_op(hit, Hit(d, m, WORLD_FRACTAL));
+        }
+
+        {
+            // portal to lavalamp world
+            vec3 q = p - vec3(10.0, 4.0, 0.0);
+            float d = sd_portal(q);
+            Material m = Material(MATERIAL_PORTAL, vec3(1.0), 0.0, 0.0);
+            hit = u_op(hit, Hit(d, m, WORLD_LAVALAMP));
+        }
+    }
+
+    return hit;
+}
+
+Hit map_fractal(vec3 p) {
+    Hit hit;
+
+    {
+        // ground
+        hit.d = sd_plane(p, vec3(0.0, 1.0, 0.0));
+        hit.material = Material(MATERIAL_OPAQUE, vec3(0.0, 0.0, 1.0), 0.0, 0.0);
+    }
+
+
+    if (g_is_primary_ray) {
+        // portal to hub
+        vec3 q = p - vec3(0.0, 4.0, 0.0);
+        float d = sd_portal(q);
+        Material m = Material(MATERIAL_PORTAL, vec3(1.0), 0.0, 0.0);
+        hit = u_op(hit, Hit(d, m, WORLD_HUB));
     }
 
     {
         // metallic fractal
-        vec3 q = p - vec3(0.0, 3.5 + 0.35*sin(0.8*u_t), 0.0);
+        vec3 q = p - vec3(0.0, 3.5 + 0.35*sin(0.8*u_t), -18.0);
 
         // domain repetition
         float s = 11.0;
         float id = round(q.x/s);
-        if (id<0 || id > 10) return hit;
+        if (id < 0 || id > 10) return hit;
         q.x = q.x - s*round(q.x/s);
 
         q.xz *= rotate_2d(0.1 * u_t);
@@ -113,29 +178,59 @@ Hit map(vec3 p) {
         d /= scaled;
 
         vec3 color = palette(trap.z * 4.0, vec3(0.5), vec3(0.5), vec3(1.0), vec3(0.0, 0.1, 0.2));
-        Material m = Material(color, 0.4, 1.0);
-        hit = u_op(hit, Hit(d, m));
+        Material m = Material(MATERIAL_OPAQUE, color, 0.4, 1.0);
+        hit = u_op(hit, Hit(d, m, NULL));
     }
 
     return hit;
+}
+
+Hit map_lavalamp(vec3 p) {
+    Hit hit;
+    {
+        // ground
+        hit.d = sd_plane(p, vec3(0.0, 1.0, 0.0));
+        hit.material = Material(MATERIAL_OPAQUE, vec3(1.0, 0.0, 1.0), 0.0, 0.0);
+    }
+    return hit;
+}
+
+Hit map(vec3 p) {
+    switch(g_world) {
+        case WORLD_HUB:
+            return map_hub(p);
+        case WORLD_FRACTAL:
+            return map_fractal(p);
+        case WORLD_LAVALAMP:
+            return map_lavalamp(p);
+    }
 }
 
 // engine
 Hit march(vec3 ro, vec3 rd) {
     float d = 0.0;
     Material m;
+    int world;
 
     for (int s = 0; s < 512; s++) {
         vec3 p = ro + d * rd;
         Hit hit = map(p);
         m = hit.material;
+        world = hit.world;
 
-        if (abs(hit.d) < 0.001) break;
+        if (abs(hit.d) < 0.001) {
+            if (hit.material.type == MATERIAL_PORTAL) {
+                g_world = hit.world;
+                d += 3.0;
+                continue;
+            }
+            break;
+        }
         d += hit.d;
         if (d > DIST_MAX) break;
     }
 
-    return Hit(d, m);
+    return Hit(d, m, world);
 }
 
 vec3 normal(vec3 p) {
@@ -173,7 +268,6 @@ float ambient_occlusion(vec3 p, vec3 n) {
 }
 
 // pbr, using cook torrance lighting model
-
 float distribution(vec3 n, vec3 h, float roughness) {
     // Trowbridge-Reitz GGX Normal Distribution
 
@@ -215,7 +309,6 @@ float g1(vec3 n, vec3 dir, float roughness) {
 
 float geometry(vec3 n, vec3 v, vec3 l, float roughness) {
     // smith method
-
     float masking = g1(n, v, roughness);
     float shadowing = g1(n, l, roughness);
 
@@ -260,9 +353,12 @@ void main() {
     vec3 ro = u_ro;
     vec3 rd = u_cam_matrix * normalize(vec3(uv, 1.0));
 
-    Hit hit = march(ro, rd);
+    if (ro.z < 0.0) g_world = WORLD_FRACTAL;
 
-    vec3 color_bg = vec3(0.005);
+    Hit hit = march(ro, rd);
+    g_is_primary_ray = false;
+
+    vec3 color_bg = vec3(0.9);
     vec3 color = color_bg;
 
     if (hit.d < DIST_MAX) {

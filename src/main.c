@@ -27,6 +27,7 @@ typedef struct {
     GLfloat window_size[2];
     GLfloat cursor_pos[2];
     Camera camera; // Embed the camera struct here
+    int mouse_captured;
 } UserData;
 
 const char *FRAGMENT_SHADER_PATH = "shaders/fragment_shader.glsl";
@@ -80,10 +81,12 @@ void camera_update(Camera *cam, float xpos, float ypos) {
 
 void cursor_position_callback(GLFWwindow* _window, GLdouble _x, GLdouble _y) {
     UserData *ud = (UserData*)glfwGetWindowUserPointer(_window);
-    ud->cursor_pos[0] =  (float)_x;
-    ud->cursor_pos[1] = (float)_y;
+    if (ud->mouse_captured) {
+        ud->cursor_pos[0] =  (float)_x;
+        ud->cursor_pos[1] = (float)_y;
 
-    camera_update(&ud->camera, (float)_x, (float)_y);
+        camera_update(&ud->camera, (float)_x, (float)_y);
+    }
 }
 
 void window_size_callback(GLFWwindow* _window, int _width, int _height) {
@@ -98,49 +101,54 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         UserData *ud = (UserData*)glfwGetWindowUserPointer(window);
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         ud->camera.first_mouse = 1;
+        ud->mouse_captured = 1;
     }
 }
 
 void process_input(GLFWwindow *_window, Camera *cam, float dt) {
+    UserData *ud = (UserData*)glfwGetWindowUserPointer(_window);
+
     if(glfwGetKey(_window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(_window, GLFW_TRUE);
     }
 
-    if(glfwGetKey(_window, GLFW_KEY_TAB) == GLFW_PRESS) {
+    if(glfwGetKey(_window, GLFW_KEY_Q) == GLFW_PRESS) {
         glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        ud->mouse_captured = 0;
     }
 
-    float speed = 5.0f * dt;
+    if (ud->mouse_captured) {
+        float speed = 5.0f * dt;
+        if (glfwGetKey(_window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+            speed *= 5;
+        }
 
-    if (glfwGetKey(_window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        speed *= 5;
-    }
-
-    if (glfwGetKey(_window, GLFW_KEY_W) == GLFW_PRESS) {
-        cam->pos[0] += cam->forward[0] * speed;
-        cam->pos[1] += cam->forward[1] * speed;
-        cam->pos[2] += cam->forward[2] * speed;
-    }
-    if (glfwGetKey(_window, GLFW_KEY_S) == GLFW_PRESS) {
-        cam->pos[0] -= cam->forward[0] * speed;
-        cam->pos[1] -= cam->forward[1] * speed;
-        cam->pos[2] -= cam->forward[2] * speed;
-    }
-    if (glfwGetKey(_window, GLFW_KEY_A) == GLFW_PRESS) {
-        cam->pos[0] -= cam->right[0] * speed;
-        cam->pos[1] -= cam->right[1] * speed;
-        cam->pos[2] -= cam->right[2] * speed;
-    }
-    if (glfwGetKey(_window, GLFW_KEY_D) == GLFW_PRESS) {
-        cam->pos[0] += cam->right[0] * speed;
-        cam->pos[1] += cam->right[1] * speed;
-        cam->pos[2] += cam->right[2] * speed;
-    }
-    if (glfwGetKey(_window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        cam->pos[1] += speed;
-    }
-    if (glfwGetKey(_window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-        cam->pos[1] -= speed;
+        if (glfwGetKey(_window, GLFW_KEY_W) == GLFW_PRESS) {
+            cam->pos[0] += cam->forward[0] * speed;
+            cam->pos[1] += cam->forward[1] * speed;
+            cam->pos[2] += cam->forward[2] * speed;
+        }
+        if (glfwGetKey(_window, GLFW_KEY_S) == GLFW_PRESS) {
+            cam->pos[0] -= cam->forward[0] * speed;
+            cam->pos[1] -= cam->forward[1] * speed;
+            cam->pos[2] -= cam->forward[2] * speed;
+        }
+        if (glfwGetKey(_window, GLFW_KEY_A) == GLFW_PRESS) {
+            cam->pos[0] -= cam->right[0] * speed;
+            cam->pos[1] -= cam->right[1] * speed;
+            cam->pos[2] -= cam->right[2] * speed;
+        }
+        if (glfwGetKey(_window, GLFW_KEY_D) == GLFW_PRESS) {
+            cam->pos[0] += cam->right[0] * speed;
+            cam->pos[1] += cam->right[1] * speed;
+            cam->pos[2] += cam->right[2] * speed;
+        }
+        if (glfwGetKey(_window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            cam->pos[1] += speed;
+        }
+        if (glfwGetKey(_window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+            cam->pos[1] -= speed;
+        }
     }
 }
 
@@ -237,6 +245,7 @@ int main() {
     ud->camera.pitch = 0.0f;
     ud->camera.yaw = 0.0f;
     ud->camera.first_mouse = 1; // Tell the camera it's the first time processing the mouse
+    ud->mouse_captured = 1;
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 

@@ -2,11 +2,9 @@
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
-layout(set = 0, binding = 0, std430) buffer Color { //TODO: change to texture
-    vec4 colors[];
-} o;
+layout(rgba8, set = 0, binding = 0) uniform writeonly image2D rendertarget;
 
-layout(set = 0, binding = 1, std430) buffer State {
+layout(set = 0, binding = 1, std430) buffer state {
     int world;
 } s;
 
@@ -19,7 +17,7 @@ struct Camera {
     vec3 up;
 };
 
-layout(set = 1, binding = 0, std140) uniform Frame {
+layout(set = 1, binding = 0, std140) uniform frame {
     vec2 resolution;
     float t;
     Camera camera;
@@ -479,6 +477,5 @@ void main() {
     color = color / (color + vec3(1.0)); // tone mapping
     color = pow(color, vec3(1.0 / 2.2)); // gamma correction
 
-    uint i = y * uint(u.resolution.x) + x;
-    o.colors[i] = vec4(color, 1.0);
+    imageStore(rendertarget, ivec2(x, y), vec4(color, 1.0));
 }

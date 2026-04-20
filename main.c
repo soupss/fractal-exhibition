@@ -292,8 +292,10 @@ void on_device_request(WGPURequestDeviceStatus status, WGPUDevice device, const 
         {
             .binding = 0,
             .visibility = WGPUShaderStage_Compute,
-            .buffer = {
-                .type = WGPUBufferBindingType_Storage
+            .storageTexture = {
+                .access = WGPUStorageTextureAccess_WriteOnly,
+                .format = WGPUTextureFormat_RGBA8Unorm,
+                .viewDimension = WGPUTextureViewDimension_2D
             }
         },
         {
@@ -311,17 +313,26 @@ void on_device_request(WGPURequestDeviceStatus status, WGPUDevice device, const 
     WGPUBindGroupLayout bgl_compute = wgpuDeviceCreateBindGroupLayout(s->device, &bgl_c_desc);
 
     // render bind group layout
-    WGPUBindGroupLayoutEntry bgl_r_entries[1] = {
+    WGPUBindGroupLayoutEntry bgl_r_entries[2] = {
         {
             .binding = 0,
             .visibility = WGPUShaderStage_Fragment,
-            .buffer = {
-                .type = WGPUBufferBindingType_ReadOnlyStorage
+            .texture = {
+                .sampleType = WGPUTextureSampleType_Float,
+                .viewDimension = WGPUTextureViewDimension_2D,
+                .multisampled = false,
+            }
+        },
+        {
+            .binding = 1,
+            .visibility = WGPUShaderStage_Fragment,
+            .sampler = {
+                .type = WGPUSamplerBindingType_Filtering
             }
         }
     };
     WGPUBindGroupLayoutDescriptor bgl_r_desc = {
-        .entryCount = 1,
+        .entryCount = 2,
         .entries = bgl_r_entries
     };
     WGPUBindGroupLayout bgl_render = wgpuDeviceCreateBindGroupLayout(s->device, &bgl_r_desc);
@@ -445,14 +456,33 @@ void on_device_request(WGPURequestDeviceStatus status, WGPUDevice device, const 
     };
     s->pl_render = wgpuDeviceCreateRenderPipeline(s->device, &pl_r_desc);
 
-    // create color buffer
-    uint64_t b_color_size = (uint64_t)s->width * (uint64_t)s->height * sizeof(float) * 4;
-    WGPUBufferDescriptor b_color_desc = {
-        .size = b_color_size,
-        .usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst | WGPUBufferUsage_CopySrc,
-        .mappedAtCreation = false
+    // create rendertarget texture
+    WGPUTextureDescriptor t_rendertarget_desc = {
+        .usage = WGPUTextureUsage_StorageBinding | WGPUTextureUsage_TextureBinding,
+        .dimension = WGPUTextureDimension_2D,
+        .size = {s->width, s->height, 1},
+        .format = WGPUTextureFormat_RGBA8Unorm,
+        .mipLevelCount = 1,
+        .sampleCount = 1,
+        .viewFormatCount = 0,
+        .viewFormats = NULL
     };
-    WGPUBuffer b_color = wgpuDeviceCreateBuffer(s->device, &b_color_desc);
+    WGPUTexture t_rendertarget = wgpuDeviceCreateTexture(s->device, &t_rendertarget_desc);
+    WGPUTextureView tv_rendertarget = wgpuTextureCreateView(t_rendertarget, NULL);
+
+    // create sampler
+    WGPUSamplerDescriptor s_rendertarget_desc = {
+        .addressModeU = WGPUAddressMode_ClampToEdge,
+        .addressModeV = WGPUAddressMode_ClampToEdge,
+        .addressModeW = WGPUAddressMode_ClampToEdge,
+        .magFilter = WGPUFilterMode_Linear,
+        .minFilter = WGPUFilterMode_Linear,
+        .mipmapFilter = WGPUMipmapFilterMode_Linear,
+        .lodMinClamp = 0.0f,
+        .lodMaxClamp = 1.0f,
+        .maxAnisotropy = 1
+    };
+    WGPUSampler s_rendertarget = wgpuDeviceCreateSampler(s->device, &s_rendertarget_desc);
 
     // create state buffer
     uint64_t b_state_size = (uint64_t)sizeof(int);
@@ -486,9 +516,7 @@ void on_device_request(WGPURequestDeviceStatus status, WGPUDevice device, const 
     WGPUBindGroupEntry bg_c_entries[2] = {
         {
             .binding = 0,
-            .buffer = b_color,
-            .offset = 0,
-            .size = b_color_size
+            .textureView = tv_rendertarget
         },
         {
             .binding = 1,
@@ -505,17 +533,19 @@ void on_device_request(WGPURequestDeviceStatus status, WGPUDevice device, const 
     s->bg_compute = wgpuDeviceCreateBindGroup(s->device, &bg_c_desc);
 
     // create render bind group
-    WGPUBindGroupEntry bg_r_entries[1] = {
+    WGPUBindGroupEntry bg_r_entries[2] = {
         {
             .binding = 0,
-            .buffer = b_color,
-            .offset = 0,
-            .size = b_color_size
+            .textureView = tv_rendertarget
+        },
+        {
+            .binding = 1,
+            .sampler = s_rendertarget
         }
     };
     WGPUBindGroupDescriptor bg_r_desc = {
         .layout = bgl_render,
-        .entryCount = 1,
+        .entryCount = 2,
         .entries = bg_r_entries
     };
     s->bg_render = wgpuDeviceCreateBindGroup(s->device, &bg_r_desc);

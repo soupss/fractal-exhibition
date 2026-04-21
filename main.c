@@ -204,6 +204,20 @@ void loop(void* userdata) {
     float dt = t - t_prev;
     t_prev = t;
 
+    static int frame_count = 0;
+    static double last_fps_time = 0.0;
+    frame_count++;
+
+    if (t - last_fps_time >= 0.1) {
+        float fps = frame_count / (t - last_fps_time);
+        EM_ASM({
+            document.getElementById('fps-counter').innerText = 'FPS: ' + Math.round($0);
+        }, fps);
+
+        frame_count = 0;
+        last_fps_time = t;
+    }
+
     process_input(&s->input, &s->camera, dt);
 
     UniformData ud = {
@@ -594,6 +608,23 @@ int main() {
                 typeof size === 'bigint' ? Number(size) : size
             );
         };
+    });
+
+    // inject fps counter div in the dom
+    EM_ASM({
+        const div = document.createElement('div');
+        div.id = 'fps-counter';
+        div.style.position = 'absolute';
+        div.style.top = '10px';
+        div.style.left = '10px';
+        div.style.color = '#00FF00';
+        div.style.fontFamily = 'monospace';
+        div.style.fontSize = '20px';
+        div.style.fontWeight = 'bold';
+        div.style.pointerEvents = 'none';
+        div.style.zIndex = '9999';
+        div.style.textShadow = '1px 1px 2px black';
+        document.body.appendChild(div);
     });
 
     State* s = (State*)malloc(sizeof(State));

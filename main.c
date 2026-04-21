@@ -139,6 +139,10 @@ void process_input(Input *input, Camera *camera, float dt) {
             yaw += input->mouse_dx * sensitivity;
             pitch -= input->mouse_dy * sensitivity;
 
+            float a = M_PI/2.0 - 0.001;
+            if (pitch < -a) pitch = -a;
+            if (pitch > a) pitch = a;
+
             Vec3 forward;
             forward.x = sinf(yaw) * cosf(pitch);
             forward.y = sinf(pitch);

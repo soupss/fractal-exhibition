@@ -91,7 +91,8 @@ mat2 rotate_2d(float a) {
     return mat2(c, s, -s, c);
 }
 
-float sd_portal(vec3 p, vec3 n) {
+float sd_portal(vec3 p, vec3 n, vec3 rd) {
+    if (dot(n, rd) > 0.0 ) return 1e8;
     vec3 up = vec3(0.0, 1.0, 0.0);
     vec3 right = normalize(cross(up, n));
 
@@ -210,7 +211,7 @@ Hit map_s_hub(vec3 p) {
     return hit;
 }
 
-Hit map_p_hub(vec3 p) {
+Hit map_p_hub(vec3 p, vec3 rd) {
     Hit hit = map_s_hub(p);
     {
         // portal to fractal world
@@ -219,7 +220,7 @@ Hit map_p_hub(vec3 p) {
         vec3 portal_n = portal[1];
 
         vec3 q = p - portal_pos;
-        float d = sd_portal(q, portal_n);
+        float d = sd_portal(q, portal_n, rd);
         Material m = Material(MATERIAL_TYPE_PORTAL, vec3(1.0), 0.0, 0.0);
         hit = u_op(hit, Hit(d, m, WORLD_SUB_FRACTAL));
     }
@@ -231,7 +232,7 @@ Hit map_p_hub(vec3 p) {
         vec3 portal_n = portal[1];
 
         vec3 q = p - portal_pos;
-        float d = sd_portal(q, portal_n);
+        float d = sd_portal(q, portal_n, rd);
         Material m = Material(MATERIAL_TYPE_PORTAL, vec3(1.0), 0.0, 0.0);
         hit = u_op(hit, Hit(d, m, WORLD_SUB_LAVALAMP));
     }
@@ -303,15 +304,15 @@ Hit map_s_fractal(vec3 p) {
     return hit;
 }
 
-Hit map_p_fractal(vec3 p) {
+Hit map_p_fractal(vec3 p, vec3 rd) {
     Hit hit = map_s_fractal(p);
     {
         mat2x3 portal = get_portal(WORLD_SUB_FRACTAL);
         vec3 portal_pos = portal[0];
-        vec3 portal_n = portal[1];
+        vec3 portal_n = -portal[1];
 
         vec3 q = p - portal_pos;
-        float d = sd_portal(q, portal_n);
+        float d = sd_portal(q, portal_n, rd);
         Material m = Material(MATERIAL_TYPE_PORTAL, vec3(1.0), 0.0, 0.0);
         hit = u_op(hit, Hit(d, m, WORLD_HUB));
     }
@@ -338,15 +339,15 @@ Hit map_s_lavalamp(vec3 p) {
     return hit;
 }
 
-Hit map_p_lavalamp(vec3 p) {
+Hit map_p_lavalamp(vec3 p, vec3 rd) {
     Hit hit = map_s_lavalamp(p);
     {
         mat2x3 portal = get_portal(WORLD_SUB_LAVALAMP);
         vec3 portal_pos = portal[0];
-        vec3 portal_n = portal[1];
+        vec3 portal_n = -portal[1];
 
         vec3 q = p - portal_pos;
-        float d = sd_portal(q, portal_n);
+        float d = sd_portal(q, portal_n, rd);
         Material m = Material(MATERIAL_TYPE_PORTAL, vec3(1.0), 0.0, 0.0);
         hit = u_op(hit, Hit(d, m, WORLD_HUB));
     }
@@ -362,10 +363,10 @@ Hit map_secondary(vec3 p) {
 }
 
 // map for primary rays
-Hit map_primary(vec3 p) {
-    if (world_ray == WORLD_HUB) return map_p_hub(p);
-    else if (world_ray == WORLD_SUB_FRACTAL) return map_p_fractal(p);
-    else if (world_ray == WORLD_SUB_LAVALAMP) return map_p_lavalamp(p);
+Hit map_primary(vec3 p, vec3 rd) {
+    if (world_ray == WORLD_HUB) return map_p_hub(p, rd);
+    else if (world_ray == WORLD_SUB_FRACTAL) return map_p_fractal(p, rd);
+    else if (world_ray == WORLD_SUB_LAVALAMP) return map_p_lavalamp(p, rd);
     else return NULL_HIT;
 }
 
@@ -379,7 +380,7 @@ Hit march(vec3 ro, vec3 rd) {
 
     for (int i = 0; i < 512; i++) {
         vec3 p = ro + d * rd;
-        hit = map_primary(p);
+        hit = map_primary(p, rd);
 
 
         float threshold = 0.001 + (d * 0.0002);
@@ -387,7 +388,10 @@ Hit march(vec3 ro, vec3 rd) {
         if (abs(hit.d) < threshold) {
             if (hit.material.type == MATERIAL_TYPE_PORTAL) {
                 world_ray = hit.world_target;
-                d += 0.1;
+                vec3 n = get_portal(world_ray)[1];
+                float a = max(abs(dot(n, rd)), 0.05);
+
+                d += 0.1 / a; // bigger jump at steeper angles
                 continue;
             }
             break;

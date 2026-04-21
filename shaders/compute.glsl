@@ -5,10 +5,10 @@ layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 layout(rgba8, set = 0, binding = 0) uniform writeonly image2D rendertarget;
 
 layout(set = 0, binding = 1, std430) buffer state {
-    int world;
-} s;
+    int world_global;
+};
 
-int g_world_ray;
+int world_ray;
 
 struct Camera {
     vec3 pos;
@@ -25,14 +25,19 @@ layout(set = 1, binding = 0, std140) uniform frame {
 
 #define NULL -1
 
-#define NUM_WORLDS 2
+#define WORLD_MAIN 0
+#define WORLD_SUB_LAVALAMP 1
+#define WORLD_SUB_FRACTAL 2
 
-#define WORLD_HUB 0
-#define WORLD_LAVALAMP 1
-#define WORLD_FRACTAL 2
+#define NUM_PORTALS 2
 
-#define MATERIAL_OPAQUE 0
-#define MATERIAL_PORTAL 1
+const int SUB_WORLDS[NUM_PORTALS] = {
+    WORLD_SUB_LAVALAMP,
+    WORLD_SUB_FRACTAL
+};
+
+#define MATERIAL_TYPE_OPAQUE 0
+#define MATERIAL_TYPE_PORTAL 1
 
 #define PI 3.1415926535897932384626433832795
 #define DIST_MAX 100
@@ -56,10 +61,10 @@ struct Light {
 struct Hit {
     float d;
     Material material;
-    int world_target; //TODO: bake into portal type or something
+    int world_target;
 };
 
-#define NULL_HIT Hit(0.0, Material(MATERIAL_OPAQUE, vec3(1.0, 0.0, 1.0), 0.0, 0.0), NULL)
+#define NULL_HIT Hit(0.0, Material(MATERIAL_TYPE_OPAQUE, vec3(1.0, 0.0, 1.0), 0.0, 0.0), NULL)
 
 ////////////////
 // primitives //
@@ -117,8 +122,8 @@ mat2x3 get_portal(int world) {
     vec3 pos;
 
     float y = 4.0;
-    if (world == WORLD_FRACTAL) pos = vec3(0.0, y, 0.0);
-    else if (world == WORLD_LAVALAMP) pos = vec3(10.0, y, 0.0);
+    if (world == WORLD_SUB_FRACTAL) pos = vec3(0.0, y, 0.0);
+    else if (world == WORLD_SUB_LAVALAMP) pos = vec3(10.0, y, 0.0);
     else pos = vec3(0.0);
 
     return mat2x3(pos, n);
@@ -146,15 +151,16 @@ bool portal_entered(int world, float dir) {
 // get world camera is in
 int get_world() {
     vec3 n = vec3(0.0, 0.0, 1.0);
-    if (s.world == WORLD_HUB) {
-        for (int w = 1; w <= NUM_WORLDS; w++) {
-            if (portal_entered(w, 1.0)) return w;
+    if (world_global == WORLD_MAIN) {
+        for (int i = 0; i < NUM_PORTALS; i++) {
+            int world = SUB_WORLDS[i];
+            if (portal_entered(world, 1.0)) return world;
         }
-        return WORLD_HUB;
+        return WORLD_MAIN;
     }
     else {
-        if (portal_entered(s.world, -1.0)) return WORLD_HUB;
-        return s.world;
+        if (portal_entered(world_global, -1.0)) return WORLD_MAIN;
+        return world_global;
     }
     return NULL;
 }
@@ -165,7 +171,7 @@ Hit map_s_hub(vec3 p) {
     {
         // ground
         hit.d = sd_plane(p, vec3(0.0, 1.0, 0.0));
-        hit.material = Material(MATERIAL_OPAQUE, vec3(1.0), 0.0, 0.0);
+        hit.material = Material(MATERIAL_TYPE_OPAQUE, vec3(1.0), 0.0, 0.0);
     }
 
     return hit;
@@ -175,18 +181,18 @@ Hit map_p_hub(vec3 p) {
     Hit hit = map_s_hub(p);
     {
         // portal to fractal world
-        vec3 q = p - get_portal(WORLD_FRACTAL)[0];
+        vec3 q = p - get_portal(WORLD_SUB_FRACTAL)[0];
         float d = sd_portal(q);
-        Material m = Material(MATERIAL_PORTAL, vec3(1.0), 0.0, 0.0);
-        hit = u_op(hit, Hit(d, m, WORLD_FRACTAL));
+        Material m = Material(MATERIAL_TYPE_PORTAL, vec3(1.0), 0.0, 0.0);
+        hit = u_op(hit, Hit(d, m, WORLD_SUB_FRACTAL));
     }
 
     {
         // portal to lavalamp world
-        vec3 q = p - get_portal(WORLD_LAVALAMP)[0];
+        vec3 q = p - get_portal(WORLD_SUB_LAVALAMP)[0];
         float d = sd_portal(q);
-        Material m = Material(MATERIAL_PORTAL, vec3(1.0), 0.0, 0.0);
-        hit = u_op(hit, Hit(d, m, WORLD_LAVALAMP));
+        Material m = Material(MATERIAL_TYPE_PORTAL, vec3(1.0), 0.0, 0.0);
+        hit = u_op(hit, Hit(d, m, WORLD_SUB_LAVALAMP));
     }
     return hit;
 }
@@ -196,7 +202,7 @@ Hit map_s_fractal(vec3 p) {
     hit.world_target = NULL;
     {
         hit.d = sd_plane(p, vec3(0.0, 1.0, 0.0));
-        hit.material = Material(MATERIAL_OPAQUE, vec3(0.0, 0.0, 1.0), 0.0, 0.0);
+        hit.material = Material(MATERIAL_TYPE_OPAQUE, vec3(0.0, 0.0, 1.0), 0.0, 0.0);
     }
 
     {
@@ -229,7 +235,7 @@ Hit map_s_fractal(vec3 p) {
         d /= scaled;
 
         vec3 color = palette(trap.z * 4.0, vec3(0.5), vec3(0.5), vec3(1.0), vec3(0.0, 0.1, 0.2));
-        Material m = Material(MATERIAL_OPAQUE, color, 0.4, 1.0);
+        Material m = Material(MATERIAL_TYPE_OPAQUE, color, 0.4, 1.0);
         hit = u_op(hit, Hit(d, m, NULL));
     }
 
@@ -239,10 +245,10 @@ Hit map_s_fractal(vec3 p) {
 Hit map_p_fractal(vec3 p) {
     Hit hit = map_s_fractal(p);
     {
-        vec3 q = p - get_portal(WORLD_FRACTAL)[0];
+        vec3 q = p - get_portal(WORLD_SUB_FRACTAL)[0];
         float d = sd_portal(q);
-        Material m = Material(MATERIAL_PORTAL, vec3(1.0), 0.0, 0.0);
-        hit = u_op(hit, Hit(d, m, WORLD_HUB));
+        Material m = Material(MATERIAL_TYPE_PORTAL, vec3(1.0), 0.0, 0.0);
+        hit = u_op(hit, Hit(d, m, WORLD_MAIN));
     }
     return hit;
 }
@@ -252,7 +258,7 @@ Hit map_s_lavalamp(vec3 p) {
     hit.world_target = NULL;
     {
         hit.d = sd_plane(p, vec3(0.0, 1.0, 0.0));
-        hit.material = Material(MATERIAL_OPAQUE, vec3(1.0, 0.0, 1.0), 0.0, 0.0);
+        hit.material = Material(MATERIAL_TYPE_OPAQUE, vec3(1.0, 0.0, 1.0), 0.0, 0.0);
     }
     return hit;
 }
@@ -260,27 +266,27 @@ Hit map_s_lavalamp(vec3 p) {
 Hit map_p_lavalamp(vec3 p) {
     Hit hit = map_s_lavalamp(p);
     {
-        vec3 q = p - get_portal(WORLD_LAVALAMP)[0];
+        vec3 q = p - get_portal(WORLD_SUB_LAVALAMP)[0];
         float d = sd_portal(q);
-        Material m = Material(MATERIAL_PORTAL, vec3(1.0), 0.0, 0.0);
-        hit = u_op(hit, Hit(d, m, WORLD_HUB));
+        Material m = Material(MATERIAL_TYPE_PORTAL, vec3(1.0), 0.0, 0.0);
+        hit = u_op(hit, Hit(d, m, WORLD_MAIN));
     }
     return hit;
 }
 
 // map for secondary rays
 Hit map_secondary(vec3 p) {
-    if (g_world_ray == WORLD_HUB) return map_s_hub(p);
-    else if (g_world_ray == WORLD_FRACTAL) return map_s_fractal(p);
-    else if (g_world_ray == WORLD_LAVALAMP) return map_s_lavalamp(p);
+    if (world_ray == WORLD_MAIN) return map_s_hub(p);
+    else if (world_ray == WORLD_SUB_FRACTAL) return map_s_fractal(p);
+    else if (world_ray == WORLD_SUB_LAVALAMP) return map_s_lavalamp(p);
     else return NULL_HIT;
 }
 
 // map for primary rays
 Hit map_primary(vec3 p) {
-    if (g_world_ray == WORLD_HUB) return map_p_hub(p);
-    else if (g_world_ray == WORLD_FRACTAL) return map_p_fractal(p);
-    else if (g_world_ray == WORLD_LAVALAMP) return map_p_lavalamp(p);
+    if (world_ray == WORLD_MAIN) return map_p_hub(p);
+    else if (world_ray == WORLD_SUB_FRACTAL) return map_p_fractal(p);
+    else if (world_ray == WORLD_SUB_LAVALAMP) return map_p_lavalamp(p);
     else return NULL_HIT;
 }
 
@@ -297,8 +303,8 @@ Hit march(vec3 ro, vec3 rd) {
         hit = map_primary(p);
 
         if (abs(hit.d) < 0.001) {
-            if (hit.material.type == MATERIAL_PORTAL) {
-                g_world_ray = hit.world_target;
+            if (hit.material.type == MATERIAL_TYPE_PORTAL) {
+                world_ray = hit.world_target;
                 d += 0.1;
                 continue;
             }
@@ -438,17 +444,17 @@ void main() {
     vec3 rd = camera_orientation * normalize(vec3(uv, 1.0));
 
     if (x == 0 && y == 0) {
-        s.world = get_world();
-        g_world_ray = s.world;
+        world_global = get_world();
+        world_ray = world_global;
     }
     else {
-        g_world_ray = get_world();
+        world_ray = get_world();
     }
 
     Hit hit = march(ro, rd);
 
     vec3 color_bg = vec3(0.9);
-    if (g_world_ray == WORLD_FRACTAL) color_bg = vec3(0.1, 0.1, 0.15); //TODO: get bg for this world
+    if (world_ray == WORLD_SUB_FRACTAL) color_bg = vec3(0.1, 0.1, 0.15); //TODO: get bg for this world
     vec3 color = color_bg;
 
     if (hit.d < DIST_MAX) {

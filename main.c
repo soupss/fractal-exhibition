@@ -90,6 +90,7 @@ EM_BOOL on_key_down(int event_type, const EmscriptenKeyboardEvent *e, void *user
     if (strcmp(e->code, "ShiftLeft") == 0) s->input.shift = true;
     if (strcmp(e->code, "Space") == 0) s->input.space = true;
     if (strcmp(e->code, "ControlLeft") == 0) s->input.control = true;
+    else return EM_FALSE;
 
     return EM_TRUE;
 }
@@ -104,6 +105,7 @@ EM_BOOL on_key_up(int event_type, const EmscriptenKeyboardEvent *e, void *userda
     if (strcmp(e->code, "ShiftLeft") == 0) s->input.shift = false;
     if (strcmp(e->code, "Space") == 0) s->input.space = false;
     if (strcmp(e->code, "ControlLeft") == 0) s->input.control = false;
+    else return EM_FALSE;
 
     return EM_TRUE;
 }
@@ -150,7 +152,7 @@ void process_input(Input *input, Camera *camera, float dt) {
         }
 
         // handle keyboard
-        float speed = 5.0 * dt;
+        float speed = 10.0 * dt;
         if (input->shift) speed *= 5.0;
         if (input->w) {
             camera->pos.x += camera->forward.x * speed;
@@ -211,7 +213,7 @@ void loop(void* userdata) {
     if (t - last_fps_time >= 0.1) {
         float fps = frame_count / (t - last_fps_time);
         EM_ASM({
-            document.getElementById('fps-counter').innerText = 'FPS: ' + Math.round($0);
+            document.getElementById('fps-counter').innerText = Math.round($0);
         }, fps);
 
         frame_count = 0;
@@ -239,7 +241,7 @@ void loop(void* userdata) {
     wgpuComputePassEncoderSetBindGroup(pass_compute, 0, s->bg_compute, 0, NULL);
     wgpuComputePassEncoderSetBindGroup(pass_compute, 1, s->bg_uniform, 0, NULL);
 
-    wgpuComputePassEncoderDispatchWorkgroups(pass_compute, s->width / 16.0, s->height / 16.0, 1);
+    wgpuComputePassEncoderDispatchWorkgroups(pass_compute, ceilf(s->width / 16.0), ceilf(s->height / 16.0), 1);
     wgpuComputePassEncoderEnd(pass_compute);
 
     // render pass
@@ -279,6 +281,7 @@ void on_webgpu_error(WGPUErrorType type, const char* message, void* userdata) {
 void on_device_request(WGPURequestDeviceStatus status, WGPUDevice device, const char* message, void* userdata) {
     State* s = (State*)userdata;
 
+    // TODO: resize on window resize
     double w, h;
     emscripten_get_element_css_size("#canvas", &w, &h);
     s->width = (float)w;
@@ -507,7 +510,7 @@ void on_device_request(WGPURequestDeviceStatus status, WGPUDevice device, const 
     };
     WGPUBuffer b_state = wgpuDeviceCreateBuffer(s->device, &b_state_desc);
 
-    int world_start = 0; // hub world
+    int world_start = 0;
     wgpuQueueWriteBuffer(s->queue, b_state, 0, &world_start, b_state_size);
 
     // create uniform buffer
@@ -619,8 +622,7 @@ int main() {
         div.style.left = '10px';
         div.style.color = '#00FF00';
         div.style.fontFamily = 'monospace';
-        div.style.fontSize = '20px';
-        div.style.fontWeight = 'bold';
+        div.style.fontSize = '18px';
         div.style.pointerEvents = 'none';
         div.style.zIndex = '9999';
         div.style.textShadow = '1px 1px 2px black';
@@ -629,7 +631,7 @@ int main() {
 
     State* s = (State*)malloc(sizeof(State));
     memset(s, 0, sizeof(State));
-    s->camera.pos = (Vec3){.x = 0.0, .y = 3.5, .z = 5.0};
+    s->camera.pos = (Vec3){.x = 0.0, .y = 3.5, .z = 10.0};
     s->camera.right = (Vec3){.x = 1.0, .y = 0.0, .z = 0.0};
     s->camera.forward = (Vec3){.x = 0.0, .y = 0.0, .z = -1.0};
     s->camera.up = (Vec3){.x = 0.0, .y = 1.0, .z = 0.0};

@@ -20,6 +20,7 @@ struct Camera {
 layout(set = 1, binding = 0, std140) uniform frame {
     vec2 resolution;
     float t;
+    float t_start;
     Camera camera;
 } u;
 
@@ -104,6 +105,39 @@ float sd_portal(vec3 p, vec3 n, vec3 rd) {
             );
 }
 
+// TODO: avoid trig in hash functions
+float hash(float k) {
+    return fract(sin(k * 12.9898) * 43758.5453123);
+}
+
+float hash12(vec2 p) {
+    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453123);
+}
+
+vec3 hash32(vec2 p) {
+    vec3 p3 = fract(vec3(p.xyx) * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yxz + 33.33);
+    return fract((p3.xxy + p3.yzz) * p3.zyx);
+}
+
+vec3 hash31(float p) {
+    vec3 p3 = fract(vec3(p) * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.xxy + p3.yzz) * p3.zyx);
+}
+
+vec3 hash33(vec3 p3) {
+    p3 = fract(p3 * vec3(.1031, .1030, .0973));
+    p3 += dot(p3, p3.yxz+33.33);
+    return fract((p3.xxy + p3.yxx)*p3.zyx);
+}
+
+float smin(float a, float b, float k) {
+    k *= 2.0;
+    float x = b-a;
+    return 0.5*( a+b-sqrt(x*x+k*k) );
+}
+
 // union operation for Hit
 Hit u_op(Hit a, Hit b) {
     if (a.d < b.d) return a;
@@ -166,17 +200,23 @@ bool portal_entered(int world, float dir) {
     vec3 up = vec3(0.0, 1.0, 0.0);
     vec3 right = normalize(cross(up, n));
 
-    float x_dist = dot(offset, right);
-    float y_dist = dot(offset, up);
-    float z_dist = dot(offset, n);
+    // camera in portal space
+    float x = dot(offset, right);
+    float y = dot(offset, up);
+    float z = dot(offset, n);
 
-    bool past = z_dist < 0 && z_dist > -0.5;
+    bool behind = z < 0 && z > -1.0;
 
-    bool inside_x = abs(x_dist) < PORTAL_WIDTH;
-    bool inside_y = abs(y_dist) < PORTAL_HEIGHT;
-    bool inside = inside_x && inside_y;
+    if (!behind) return false;
 
-    return past && inside;
+    float x2 = x*x;
+    float y2 = y*y;
+    float w2 = PORTAL_WIDTH*PORTAL_WIDTH;
+    float h2 = PORTAL_HEIGHT*PORTAL_HEIGHT;
+
+    bool inside = x2/w2 + y2/h2 <= 1.0;
+
+    return behind && inside;
 }
 
 // get world camera is in
@@ -201,7 +241,7 @@ vec3 get_bg(int world) {
     else return vec3(0.0);
 }
 
-Hit map_s_hub(vec3 p) {
+Hit map_hub_s(vec3 p) {
     Hit hit;
     hit.world_target = WORLD_HUB;
     // white nothingness
@@ -211,8 +251,8 @@ Hit map_s_hub(vec3 p) {
     return hit;
 }
 
-Hit map_p_hub(vec3 p, vec3 rd) {
-    Hit hit = map_s_hub(p);
+Hit map_hub_p(vec3 p, vec3 rd) {
+    Hit hit = map_hub_s(p);
     {
         // portal to fractal world
         mat2x3 portal = get_portal(WORLD_SUB_FRACTAL);
@@ -239,7 +279,7 @@ Hit map_p_hub(vec3 p, vec3 rd) {
     return hit;
 }
 
-Hit map_s_fractal(vec3 p) {
+Hit map_fractal_s(vec3 p) {
     mat2x3 portal = get_portal(WORLD_SUB_FRACTAL);
     vec3 portal_pos = portal[0];
     vec3 portal_n = portal[1];
@@ -261,7 +301,6 @@ Hit map_s_fractal(vec3 p) {
     {
         vec3 q = q - vec3(0.0, 3.5 + 0.35*sin(0.8*u.t), -18.0);
 
-
         float s = 11.0;
         float id = round(q.x/s);
         if (id < 0 || id > 10) return hit;
@@ -271,8 +310,11 @@ Hit map_s_fractal(vec3 p) {
         q.yz *= rotate_2d(0.05 * u.t);
         q.xz *= rotate_2d(0.05 * -u.t);
 
-        float d_bound = sd_sphere(q, 8.0);
-        if (d_bound < 0.1) {
+        float d_bound = sd_sphere(q, 10.0);
+        if (d_bound > 1.0) {
+            hit.d = min(hit.d, d_bound);
+        }
+        else {
 
             // precalculate rotation matrices
             mat2 rot_xz = rotate_2d(0.2*u.t);
@@ -304,8 +346,8 @@ Hit map_s_fractal(vec3 p) {
     return hit;
 }
 
-Hit map_p_fractal(vec3 p, vec3 rd) {
-    Hit hit = map_s_fractal(p);
+Hit map_fractal_p(vec3 p, vec3 rd) {
+    Hit hit = map_fractal_s(p);
     {
         mat2x3 portal = get_portal(WORLD_SUB_FRACTAL);
         vec3 portal_pos = portal[0];
@@ -319,15 +361,43 @@ Hit map_p_fractal(vec3 p, vec3 rd) {
     return hit;
 }
 
-Hit map_s_lavalamp(vec3 p) {
-    const float world_height = 20.0;
+#define BLUBS 4
+
+vec3 g_blub_pos[BLUBS];
+float g_blub_r[BLUBS];
+
+void precalculate_blobs() {
+    float world_height = 20.0;
+    float y = world_height/2.0 + world_height * 0.7 * sin(2.0*PI*hash(u.t_start) + u.t * 0.6);
+    y = 5.0 + y*0.65;
+
+    float r_blob = 3.5;
+
+    for (int i = 0; i < BLUBS; i++) {
+        vec3 rand = hash32(vec2(u.t_start, float(i)));
+
+        float r_blub_amp = r_blob*0.5*1.5;
+        g_blub_r[i] = r_blob*0.5*(rand.x+0.5);
+        float s = 1.2*r_blob;
+
+        float y2 = y + s*sin(2.0*PI*rand.y + u.t*(1.5 + rand.y));
+        float x = s*sin(2.0*PI*rand.x + u.t*(1.5 + rand.x));
+        float z = s*sin(2.0*PI*rand.z + u.t*(1.5 + rand.z));
+        g_blub_pos[i] = vec3(x, y2, z);
+    }
+}
+
+Hit map_lavalamp_s(vec3 p) {
+    float world_height = 20.0;
+    p.y += 4.0;
+    p.x -= 35.0;
 
     Hit hit;
     hit.world_target = NULL;
     // floor
     {
         hit.d = sd_plane(p, vec3(0.0, 1.0, 0.0));
-        hit.material = Material(MATERIAL_TYPE_OPAQUE, vec3(1.0, 0.0, 1.0), 0.0, 0.0);
+        hit.material = Material(MATERIAL_TYPE_OPAQUE, vec3(0.0, 0.0, 1.0), 0.0, 0.0);
     }
     // roof
     {
@@ -336,11 +406,35 @@ Hit map_s_lavalamp(vec3 p) {
         Material m = Material(MATERIAL_TYPE_OPAQUE, vec3(1.0, 0.0, 0.0), 0.0, 0.0);
         hit = u_op(hit, Hit(d, m, WORLD_SUB_LAVALAMP));
     }
+
+    // blob and blubs
+    {
+        vec3 q = p;
+
+        float y = world_height/2.0 + world_height * 0.7 * sin(2.0*PI*hash(u.t_start) + u.t * 0.6);
+        y = 5.0 + y*0.65;
+
+        vec3 q_blob = q - vec3(0.0, y, 0.0);
+        float r_blob = 3.5;
+        float d = sd_sphere(q_blob, r_blob);
+        d = smin(d, hit.d, 0.5);
+
+        for (int i = 0; i < BLUBS; i++) {
+            vec3 q_blub = q - g_blub_pos[i];
+            float r = g_blub_r[i];
+            float d2 = sd_sphere(q_blub, r);
+            d = smin(d, d2, 1.5-0.8*r/5.0);
+        }
+
+        vec3 color = palette(p.y/world_height + 0.1 * u.t, vec3(0.5), vec3(0.5), vec3(1.0), vec3(0.0, 0.33, 0.67));
+        Material m = Material(MATERIAL_TYPE_OPAQUE, color, 0.2, 0.8);
+        hit = u_op(hit, Hit(d, m, WORLD_SUB_LAVALAMP));
+    }
     return hit;
 }
 
-Hit map_p_lavalamp(vec3 p, vec3 rd) {
-    Hit hit = map_s_lavalamp(p);
+Hit map_lavalamp_p(vec3 p, vec3 rd) {
+    Hit hit = map_lavalamp_s(p);
     {
         mat2x3 portal = get_portal(WORLD_SUB_LAVALAMP);
         vec3 portal_pos = portal[0];
@@ -356,17 +450,17 @@ Hit map_p_lavalamp(vec3 p, vec3 rd) {
 
 // map for secondary (and primary) rays
 Hit map_secondary(vec3 p) {
-    if (world_ray == WORLD_HUB) return map_s_hub(p);
-    else if (world_ray == WORLD_SUB_FRACTAL) return map_s_fractal(p);
-    else if (world_ray == WORLD_SUB_LAVALAMP) return map_s_lavalamp(p);
+    if (world_ray == WORLD_HUB) return map_hub_s(p);
+    else if (world_ray == WORLD_SUB_FRACTAL) return map_fractal_s(p);
+    else if (world_ray == WORLD_SUB_LAVALAMP) return map_lavalamp_s(p);
     else return NULL_HIT;
 }
 
 // map for primary rays
 Hit map_primary(vec3 p, vec3 rd) {
-    if (world_ray == WORLD_HUB) return map_p_hub(p, rd);
-    else if (world_ray == WORLD_SUB_FRACTAL) return map_p_fractal(p, rd);
-    else if (world_ray == WORLD_SUB_LAVALAMP) return map_p_lavalamp(p, rd);
+    if (world_ray == WORLD_HUB) return map_hub_p(p, rd);
+    else if (world_ray == WORLD_SUB_FRACTAL) return map_fractal_p(p, rd);
+    else if (world_ray == WORLD_SUB_LAVALAMP) return map_lavalamp_p(p, rd);
     else return NULL_HIT;
 }
 
@@ -378,13 +472,11 @@ Hit march(vec3 ro, vec3 rd) {
     float d = 0.0;
     Hit hit;
 
-    for (int i = 0; i < 512; i++) {
+    for (int i = 0; i < 256; i++) {
         vec3 p = ro + d * rd;
         hit = map_primary(p, rd);
 
-
         float threshold = 0.001 + (d * 0.0002);
-
         if (abs(hit.d) < threshold) {
             if (hit.material.type == MATERIAL_TYPE_PORTAL) {
                 world_ray = hit.world_target;
@@ -417,8 +509,9 @@ vec3 normal(vec3 p) {
 float shadow(vec3 ro, vec3 rd, float d_max) {
     float d = 0.1;
     float occlusion = 1.0;
-    for (int i = 0; i < 64 && d < d_max; i++) {
-        float h = map_secondary(ro + rd*d).d;
+    for (int i = 0; i < 256 && d < d_max; i++) {
+        vec3 p = ro + rd * d;
+        float h = map_secondary(p).d;
         if (h < 0.001) return 0.0;
         occlusion = min(occlusion, 64.0*h/d);
         d += h;
@@ -537,6 +630,8 @@ void main() {
         world_ray = get_world();
     }
 
+    precalculate_blobs();
+
     Hit hit = march(ro, rd);
 
     vec3 color_bg = get_bg(world_ray);
@@ -547,9 +642,9 @@ void main() {
         vec3 n = normal(p);
         vec3 v = normalize(ro - p);
 
-        vec3 light_pos = vec3(0.0, 2.0, 0.0);
+        vec3 light_pos = vec3(0.0, 5.0, 0.0);
         vec3 light_color = vec3(1.0, 1.0, 1.0);
-        Light lamp = Light(light_pos, light_color, 200.0);
+        Light lamp = Light(light_pos, light_color, 1000.0);
         vec3 direct = lighting(p, n, v, lamp, hit.material);
 
         vec3 l = normalize(light_pos - p);

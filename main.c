@@ -23,8 +23,8 @@ typedef struct {
 typedef struct {
     float width;
     float height;
-    float time;
-    float _pad;
+    float t;
+    float t_start;
     Camera camera;
 } UniformData;
 
@@ -44,6 +44,7 @@ typedef struct {
 typedef struct {
     float width;
     float height;
+    float t_start;
     Input input;
     Camera camera;
 
@@ -229,7 +230,8 @@ void loop(void* userdata) {
     UniformData ud = {
         .width = s->width,
         .height = s->height,
-        .time = t,
+        .t = t,
+        .t_start = s->t_start,
         .camera = s->camera
     };
     wgpuQueueWriteBuffer(s->queue, s->b_uniform, 0, &ud, sizeof(UniformData));
@@ -521,7 +523,7 @@ void on_device_request(WGPURequestDeviceStatus status, WGPUDevice device, const 
     UniformData ud = {
         .width = s->width,
         .height = s->height,
-        .time = 0,
+        .t = 0,
         .camera = s->camera
     };
     WGPUBufferDescriptor b_uniform_desc = {
@@ -635,6 +637,11 @@ int main() {
 
     State* s = (State*)malloc(sizeof(State));
     memset(s, 0, sizeof(State));
+
+    double t_start_sec = emscripten_date_now()/1000.0;
+    s->t_start = (float)fmod(t_start_sec, 10000);
+    printf("%f\n", s->t_start);
+
     s->camera.pos = (Vec3){.x = 0.0, .y = 3.5, .z = 10.0};
     s->camera.right = (Vec3){.x = 1.0, .y = 0.0, .z = 0.0};
     s->camera.forward = (Vec3){.x = 0.0, .y = 0.0, .z = -1.0};

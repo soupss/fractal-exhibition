@@ -623,13 +623,12 @@ void main() {
     mat3 camera_orientation = mat3(u.camera.right, u.camera.up, u.camera.forward);
     vec3 rd = camera_orientation * normalize(vec3(uv, 1.0));
 
+    int world = get_world();
     if (x == 0 && y == 0) {
-        int world = get_world();
         world_global = world;
         world_ray = world;
     }
-    else world_ray = get_world();
-
+    else world_ray = world;
 
     precalculate_blobs();
 

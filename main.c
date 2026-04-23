@@ -9,6 +9,11 @@
 typedef struct {
     float x;
     float y;
+} Vec2;
+
+typedef struct {
+    float x;
+    float y;
     float z;
     float _pad;
 } Vec3;
@@ -21,8 +26,7 @@ typedef struct {
 } Camera;
 
 typedef struct {
-    float width;
-    float height;
+    Vec2 resolution;
     float t;
     float t_start;
     Camera camera;
@@ -43,8 +47,7 @@ typedef struct {
 } Input;
 
 typedef struct {
-    float width;
-    float height;
+    Vec2 resolution;
     float t_start;
     Input input;
     Camera camera;
@@ -69,16 +72,16 @@ float vec3_length(Vec3 v) {
 
 Vec3 vec3_normalize(Vec3 v) {
     float len = vec3_length(v);
-    if (len == 0.0f) return (Vec3){0, 0, 0, 0};
-    return (Vec3){.x = v.x / len, .y = v.y / len, .z = v.z / len, ._pad = 0.0f};
+    if (len == 0.0f) return (Vec3){0.0, 0.0, 0.0, 0.0};
+    return (Vec3){v.x / len, v.y / len, v.z / len, 0.0};
 }
 
 Vec3 vec3_cross(Vec3 a, Vec3 b) {
     return (Vec3){
-        .x = a.y * b.z - a.z * b.y,
-        .y = a.z * b.x - a.x * b.z,
-        .z = a.x * b.y - a.y * b.x,
-        ._pad = 0.0f
+        a.y * b.z - a.z * b.y,
+        a.z * b.x - a.x * b.z,
+        a.x * b.y - a.y * b.x,
+        0.0f
     };
 }
 
@@ -231,8 +234,7 @@ void loop(void* userdata) {
     process_input(&s->input, &s->camera, dt);
 
     UniformData ud = {
-        .width = s->width,
-        .height = s->height,
+        .resolution = s->resolution,
         .t = t,
         .t_start = s->t_start,
         .camera = s->camera,
@@ -251,7 +253,9 @@ void loop(void* userdata) {
     wgpuComputePassEncoderSetBindGroup(pass_compute, 0, s->bg_compute, 0, NULL);
     wgpuComputePassEncoderSetBindGroup(pass_compute, 1, s->bg_uniform, 0, NULL);
 
-    wgpuComputePassEncoderDispatchWorkgroups(pass_compute, ceilf(s->width / 16.0), ceilf(s->height / 16.0), 1);
+    float wg_x = ceilf(s->resolution.x / 16.0);
+    float wg_y = ceilf(s->resolution.y / 16.0);
+    wgpuComputePassEncoderDispatchWorkgroups(pass_compute, wg_x, wg_y, 1);
     wgpuComputePassEncoderEnd(pass_compute);
 
     // render pass
@@ -294,9 +298,7 @@ void on_device_request(WGPURequestDeviceStatus status, WGPUDevice device, const 
     // TODO: resize on window resize
     double w, h;
     emscripten_get_element_css_size("#canvas", &w, &h);
-    s->width = (float)w;
-    s->height = (float)h;
-    printf("resolution: (%f, %f)\n", s->width, s->height);
+    s->resolution = (Vec2){(float)w, (float)h};
 
     s->device = device;
     s->queue = wgpuDeviceGetQueue(s->device);
@@ -308,8 +310,8 @@ void on_device_request(WGPURequestDeviceStatus status, WGPUDevice device, const 
         .format = s->surface_format,
         .usage = WGPUTextureUsage_RenderAttachment,
         .alphaMode = WGPUCompositeAlphaMode_Auto,
-        .width = (uint32_t)s->width,
-        .height = (uint32_t)s->height,
+        .width = (uint32_t)s->resolution.x,
+        .height = (uint32_t)s->resolution.y,
         .presentMode = WGPUPresentMode_Fifo
     };
     wgpuSurfaceConfigure(s->surface, &config);
@@ -487,7 +489,7 @@ void on_device_request(WGPURequestDeviceStatus status, WGPUDevice device, const 
     WGPUTextureDescriptor t_rendertarget_desc = {
         .usage = WGPUTextureUsage_StorageBinding | WGPUTextureUsage_TextureBinding,
         .dimension = WGPUTextureDimension_2D,
-        .size = {s->width, s->height, 1},
+        .size = {s->resolution.x, s->resolution.y, 1},
         .format = WGPUTextureFormat_RGBA8Unorm,
         .mipLevelCount = 1,
         .sampleCount = 1,
@@ -524,20 +526,12 @@ void on_device_request(WGPURequestDeviceStatus status, WGPUDevice device, const 
     wgpuQueueWriteBuffer(s->queue, b_state, 0, &world_start, b_state_size);
 
     // create uniform buffer
-    UniformData ud = {
-        .width = s->width,
-        .height = s->height,
-        .t = 0,
-        .camera = s->camera
-    };
     WGPUBufferDescriptor b_uniform_desc = {
         .size = sizeof(UniformData),
         .usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst,
         .mappedAtCreation = false
     };
     s->b_uniform = wgpuDeviceCreateBuffer(s->device, &b_uniform_desc);
-
-    wgpuQueueWriteBuffer(s->queue, s->b_uniform, 0, &ud, sizeof(UniformData));
 
     // create compute bind group
     WGPUBindGroupEntry bg_c_entries[2] = {
@@ -644,7 +638,6 @@ int main() {
 
     double t_start_sec = emscripten_date_now()/1000.0;
     s->t_start = (float)fmod(t_start_sec, 10000);
-    printf("%f\n", s->t_start);
 
     s->camera.pos = (Vec3){.x = 0.0, .y = 3.5, .z = 10.0};
     s->camera.right = (Vec3){.x = 1.0, .y = 0.0, .z = 0.0};

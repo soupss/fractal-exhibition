@@ -26,6 +26,7 @@ typedef struct {
     float t;
     float t_start;
     Camera camera;
+    Vec3 camera_pos_prev;
 } UniformData;
 
 typedef struct {
@@ -225,6 +226,8 @@ void loop(void* userdata) {
         last_fps_time = t;
     }
 
+    Vec3 camera_pos_prev = s->camera.pos;
+
     process_input(&s->input, &s->camera, dt);
 
     UniformData ud = {
@@ -232,7 +235,8 @@ void loop(void* userdata) {
         .height = s->height,
         .t = t,
         .t_start = s->t_start,
-        .camera = s->camera
+        .camera = s->camera,
+        .camera_pos_prev = camera_pos_prev
     };
     wgpuQueueWriteBuffer(s->queue, s->b_uniform, 0, &ud, sizeof(UniformData));
 

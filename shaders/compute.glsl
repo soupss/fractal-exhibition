@@ -22,6 +22,7 @@ layout(set = 1, binding = 0, std140) uniform frame {
     float t;
     float t_start;
     Camera camera;
+    vec3 camera_pos_prev;
 } u;
 
 #define NULL -1
@@ -92,8 +93,7 @@ mat2 rotate_2d(float a) {
     return mat2(c, s, -s, c);
 }
 
-float sd_portal(vec3 p, vec3 n, vec3 rd) {
-    if (dot(n, rd) > 0.0 ) return 1e8;
+float sd_portal(vec3 p, vec3 n) {
     vec3 up = vec3(0.0, 1.0, 0.0);
     vec3 right = normalize(cross(up, n));
 
@@ -187,36 +187,36 @@ mat2x3 get_portal(int world) {
     return mat2x3(pos, n);
 }
 
-// did the camera just enter portal to "world" from "dir"?
-// 1 = front, -1 = back
-bool portal_entered(int world, float dir) {
+bool portal_entered(int world) {
     mat2x3 portal = get_portal(world);
     vec3 pos = portal[0];
-    vec3 n = portal[1] * sign(dir);
+    vec3 n = portal[1];
 
-    vec3 offset = u.camera.pos - pos;
+    vec3 cam_pos_relative = u.camera.pos - pos;
+    vec3 cam_pos_relative_prev = u.camera_pos_prev - pos;
 
-    // portal's local axes
-    vec3 up = vec3(0.0, 1.0, 0.0);
-    vec3 right = normalize(cross(up, n));
+    // camera pos in portal space
+    float z = dot(cam_pos_relative, n);
+    float z_prev = dot(cam_pos_relative_prev, n);
 
-    // camera in portal space
-    float x = dot(offset, right);
-    float y = dot(offset, up);
-    float z = dot(offset, n);
+    if (sign(z) != sign(z_prev)) {
+        // portal's local axes
+        vec3 up = vec3(0.0, 1.0, 0.0);
+        vec3 right = normalize(cross(up, n));
 
-    bool behind = z < 0 && z > -1.0;
+        float x = dot(cam_pos_relative, right);
+        float y = dot(cam_pos_relative, up);
 
-    if (!behind) return false;
+        float x2 = x*x;
+        float y2 = y*y;
+        float w2 = PORTAL_WIDTH*PORTAL_WIDTH;
+        float h2 = PORTAL_HEIGHT*PORTAL_HEIGHT;
 
-    float x2 = x*x;
-    float y2 = y*y;
-    float w2 = PORTAL_WIDTH*PORTAL_WIDTH;
-    float h2 = PORTAL_HEIGHT*PORTAL_HEIGHT;
+        bool intersects_xy = x2/w2 + y2/h2 <= 1.0;
+        return intersects_xy;
+    }
 
-    bool inside = x2/w2 + y2/h2 <= 1.0;
-
-    return behind && inside;
+    return false;
 }
 
 // get world camera is in
@@ -225,12 +225,12 @@ int get_world() {
     if (world_global == WORLD_HUB) {
         for (int i = 0; i < NUM_PORTALS; i++) {
             int world = SUB_WORLDS[i];
-            if (portal_entered(world, 1.0)) return world;
+            if (portal_entered(world)) return world;
         }
         return WORLD_HUB;
     }
     else {
-        if (portal_entered(world_global, -1.0)) return WORLD_HUB;
+        if (portal_entered(world_global)) return WORLD_HUB;
         return world_global;
     }
     return NULL;
@@ -251,7 +251,7 @@ Hit map_hub_s(vec3 p) {
     return hit;
 }
 
-Hit map_hub_p(vec3 p, vec3 rd) {
+Hit map_hub_p(vec3 p) {
     Hit hit = map_hub_s(p);
     {
         // portal to fractal world
@@ -260,7 +260,7 @@ Hit map_hub_p(vec3 p, vec3 rd) {
         vec3 portal_n = portal[1];
 
         vec3 q = p - portal_pos;
-        float d = sd_portal(q, portal_n, rd);
+        float d = sd_portal(q, portal_n);
         Material m = Material(MATERIAL_TYPE_PORTAL, vec3(1.0), 0.0, 0.0);
         hit = u_op(hit, Hit(d, m, WORLD_SUB_FRACTAL));
     }
@@ -272,7 +272,7 @@ Hit map_hub_p(vec3 p, vec3 rd) {
         vec3 portal_n = portal[1];
 
         vec3 q = p - portal_pos;
-        float d = sd_portal(q, portal_n, rd);
+        float d = sd_portal(q, portal_n);
         Material m = Material(MATERIAL_TYPE_PORTAL, vec3(1.0), 0.0, 0.0);
         hit = u_op(hit, Hit(d, m, WORLD_SUB_LAVALAMP));
     }
@@ -346,7 +346,7 @@ Hit map_fractal_s(vec3 p) {
     return hit;
 }
 
-Hit map_fractal_p(vec3 p, vec3 rd) {
+Hit map_fractal_p(vec3 p) {
     Hit hit = map_fractal_s(p);
     {
         mat2x3 portal = get_portal(WORLD_SUB_FRACTAL);
@@ -354,7 +354,7 @@ Hit map_fractal_p(vec3 p, vec3 rd) {
         vec3 portal_n = -portal[1];
 
         vec3 q = p - portal_pos;
-        float d = sd_portal(q, portal_n, rd);
+        float d = sd_portal(q, portal_n);
         Material m = Material(MATERIAL_TYPE_PORTAL, vec3(1.0), 0.0, 0.0);
         hit = u_op(hit, Hit(d, m, WORLD_HUB));
     }
@@ -433,7 +433,7 @@ Hit map_lavalamp_s(vec3 p) {
     return hit;
 }
 
-Hit map_lavalamp_p(vec3 p, vec3 rd) {
+Hit map_lavalamp_p(vec3 p) {
     Hit hit = map_lavalamp_s(p);
     {
         mat2x3 portal = get_portal(WORLD_SUB_LAVALAMP);
@@ -441,7 +441,7 @@ Hit map_lavalamp_p(vec3 p, vec3 rd) {
         vec3 portal_n = -portal[1];
 
         vec3 q = p - portal_pos;
-        float d = sd_portal(q, portal_n, rd);
+        float d = sd_portal(q, portal_n);
         Material m = Material(MATERIAL_TYPE_PORTAL, vec3(1.0), 0.0, 0.0);
         hit = u_op(hit, Hit(d, m, WORLD_HUB));
     }
@@ -457,10 +457,10 @@ Hit map_secondary(vec3 p) {
 }
 
 // map for primary rays
-Hit map_primary(vec3 p, vec3 rd) {
-    if (world_ray == WORLD_HUB) return map_hub_p(p, rd);
-    else if (world_ray == WORLD_SUB_FRACTAL) return map_fractal_p(p, rd);
-    else if (world_ray == WORLD_SUB_LAVALAMP) return map_lavalamp_p(p, rd);
+Hit map_primary(vec3 p) {
+    if (world_ray == WORLD_HUB) return map_hub_p(p);
+    else if (world_ray == WORLD_SUB_FRACTAL) return map_fractal_p(p);
+    else if (world_ray == WORLD_SUB_LAVALAMP) return map_lavalamp_p(p);
     else return NULL_HIT;
 }
 
@@ -474,7 +474,7 @@ Hit march(vec3 ro, vec3 rd) {
 
     for (int i = 0; i < 256; i++) {
         vec3 p = ro + d * rd;
-        hit = map_primary(p, rd);
+        hit = map_primary(p);
 
         float threshold = 0.001 + (d * 0.0002);
         if (abs(hit.d) < threshold) {
@@ -491,6 +491,7 @@ Hit march(vec3 ro, vec3 rd) {
 
         d += abs(hit.d);
         if (d > DIST_MAX) break;
+
     }
 
     return Hit(d, hit.material, hit.world_target);

@@ -623,12 +623,12 @@ void main() {
     vec3 rd = camera_orientation * normalize(vec3(uv, 1.0));
 
     if (x == 0 && y == 0) {
-        world_global = get_world();
-        world_ray = world_global;
+        int world = get_world();
+        world_global = world;
+        world_ray = world;
     }
-    else {
-        world_ray = get_world();
-    }
+    else world_ray = get_world();
+
 
     precalculate_blobs();
 
@@ -660,7 +660,6 @@ void main() {
     float fog_factor = smoothstep(DIST_MAX * 0.7, DIST_MAX, hit.d);
     color = mix(color, color_bg, fog_factor);
 
-    color = color / (color + vec3(1.0)); // tone mapping
     color = pow(color, vec3(1.0 / 2.2)); // gamma correction
 
     imageStore(rendertarget, ivec2(x, y), vec4(color, 1.0));

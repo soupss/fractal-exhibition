@@ -29,15 +29,16 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
         </style>
     </head>
     <body>
+        <canvas id="canvas"></canvas>
         <div id="fps-counter">0</div>
         <canvas id="fps-graph" width="400" height="300"></canvas>
-        <canvas id="canvas"></canvas>
         <script>
             window.fps_list = [];
 
             const graph_canvas = document.getElementById('fps-graph');
             const ctx = graph_canvas.getContext('2d');
 
+            //TODO: scale graph with window size
             function drawGraph() {
                 ctx.clearRect(0, 0, graph_canvas.width, graph_canvas.height);
 
@@ -74,6 +75,14 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
             requestAnimationFrame(drawGraph);
 
             var Module = {
+                canvas: document.getElementById('canvas'),
+
+                locateFile: function(path, prefix) {
+                    if (path.endsWith('.wasm') || path.endsWith('.wgsl')) {
+                        return path + '?cb=' + Date.now();
+                    }
+                    return prefix + path;
+                },
                 onRuntimeInitialized: function() {
                     const ws = new WebSocket('ws://localhost:3000');
 
@@ -95,6 +104,8 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
                 }
             };
         </script>
-        <script src="main.js"></script>
+        <script>
+            document.write('<script src="main.js?cb=' + Date.now() + '"><\/script>');
+        </script>
     </body>
 </html>

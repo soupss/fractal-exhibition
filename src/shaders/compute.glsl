@@ -550,7 +550,7 @@ Hit map_lavalamp_p(vec3 p) {
 Hit map_mountain_s(vec3 p) {
     Hit hit;
     hit.world_target = NULL;
-    hit.material = Material(MATERIAL_TYPE_OPAQUE, vec3(0.8, 0.5, 0.7), 0.9, 0.2);
+    hit.material = Material(MATERIAL_TYPE_OPAQUE, vec3(1.0, 0.1, 0.1), 0.9, 0.2);
 
     p.y += 30;
 
@@ -641,86 +641,182 @@ Hit map_primary(vec3 p) {
     else return NULL_HIT;
 }
 
+// NOTE: octave as variable?
+Hit heightmap_mountain(vec2 p) {
+    vec2 offset = hash12(u.t_start);
+    float h = fbm(offset + p * 0.02, 5);
+    h *= 50.0;
+
+    Material m = Material(MATERIAL_TYPE_OPAQUE, vec3(0.8, 0.3, 0.4), 0.8, 0.2);
+
+    return Hit(h, m, WORLD_SUB_MOUNTAIN);
+}
+
+Hit heightmap(vec2 p) {
+    if (world_ray == WORLD_SUB_MOUNTAIN) return heightmap_mountain(p);
+    return NULL_HIT;
+}
+
 ////////////
 // engine //
 ////////////
 
-// TODO: change d to t
-Hit march(vec3 ro, vec3 rd) {
+Hit march_sdf(vec3 ro, vec3 rd) {
+    float d = 0.0;
+    Material material;
+    int world_target;
+
+    for (int i = 0; i < 256; i++) {
+        vec3 p = ro + rd*d;
+
+        Hit hit = map_primary(p);
+        material = hit.material;
+        world_target = hit.world_target;
+
+        d += hit.d;
+
+        if (abs(hit.d) < 0.0001) {
+            break;
+        }
+
+        if (d > D_MAX) {
+            return Hit(1e8, Material(MATERIAL_TYPE_OPAQUE, vec3(1.0), 0.0, 0.0), NULL);
+        }
+    }
+    return Hit(d, material, world_target);
+}
+
+// TODO: hit portal
+Hit march_terrain(vec3 ro, vec3 rd) {
     float d = 0.0;
     Hit hit;
-    float r_prev = 0.0;
-    float omega = 1.4;
-    float step = 0.0;
 
-    float d_candidate = 0.0;
-    float error_candidate = 1e8;
-    Material material_candidate = Material(MATERIAL_TYPE_OPAQUE, vec3(0.0), 0.0, 0.0);
-    int target_candidate = NULL;
+    for (int i = 0; i < 256; i++) {
+        float step = 0.5 + d*0.1; // TODO: set based on world
+        vec3 p = ro + rd*d;
 
-    float r_pixel = 1.0/u.resolution.y;
-
-    float is = 0.0;
-    for (int i = 0; i < STEPS_MAX; i++) {
-        vec3 p = ro + d * rd;
-        hit = map_primary(p);
-        is++;
-
-        float r = hit.d;
-
-        float threshold = 0.001 + (d * 0.0002);
-        if (abs(r) < threshold && hit.material.type == MATERIAL_TYPE_PORTAL) {
-            world_ray = hit.world_target;
-            vec3 n = get_portal(world_ray)[1];
-            float a = abs(dot(n, rd));
-            a = max(a, 1e-8);
-            d += (20.0*threshold) / a;
-
-            r_prev = 0.0;
-            step = 0.0;
-            error_candidate = 1e8;
-            continue;
+        if (world_ray == WORLD_SUB_MOUNTAIN) {
+            hit = heightmap_mountain(p.xz);
         }
 
-        bool overstep = (omega > 1.0) && (r + r_prev) < step; // step from previous iteration
-        if (overstep) {
-            d -= step;
-            step = r_prev;
-            omega = 1.0;
-            continue;
+        float height = hit.d;
+
+        if (p.y < height) {
+            hit.d = d;
+            return hit;
         }
-        else {
-            step = r * omega;
-            r_prev = r;
-        }
-
-        float error = r / d;
-
-        if (!overstep && error < error_candidate) {
-            d_candidate = d;
-            error_candidate = error;
-            material_candidate = hit.material;
-            target_candidate = hit.world_target;
-        }
-
-        if (!overstep && error < r_pixel && hit.material.type != MATERIAL_TYPE_PORTAL) break;
-        if (r < threshold) break;
-
-        if (d > D_MAX) return Hit(1e8, material_candidate, NULL);
 
         d += step;
+        if (d > D_MAX) break;
     }
-
-#ifdef DEBUG
-    return Hit(is, material_candidate, target_candidate);
-#endif
-
-    if (error_candidate > r_pixel * 1.5) {
-        return Hit(1e8, material_candidate, NULL);
-    }
-
-    return Hit(d_candidate, material_candidate, target_candidate);
+    return NULL_HIT;
 }
+
+Hit march(vec3 ro, vec3 rd) {
+    float d_total = 0.0;
+    Hit hit = NULL_HIT;
+
+    while (d_total < D_MAX) {
+        vec3 ro_current = ro + rd*d_total;
+
+        if (world_ray == WORLD_SUB_MOUNTAIN) {
+            hit = march_terrain(ro_current, rd);
+        }
+        else {
+            hit = march_sdf(ro_current, rd);
+        }
+
+        d_total += hit.d;
+
+        if (hit.material.type == MATERIAL_TYPE_PORTAL) {
+            world_ray = hit.world_target;
+
+            vec3 n = get_portal(world_ray)[1];
+            float a = max(abs(dot(n, rd)), 1e-8);
+            d_total += 1.0 / a;
+            continue;
+        }
+
+        break;
+    }
+    return Hit(d_total, hit.material, hit.world_target);
+}
+
+// Hit march_old(vec3 ro, vec3 rd) {
+//     float d = 0.0;
+//     Hit hit;
+//     float r_prev = 0.0;
+//     float omega = 1.4;
+//     float step = 0.0;
+//
+//     float d_candidate = 0.0;
+//     float error_candidate = 1e8;
+//     Material material_candidate = Material(MATERIAL_TYPE_OPAQUE, vec3(0.0), 0.0, 0.0);
+//     int target_candidate = NULL;
+//
+//     float r_pixel = 1.0/u.resolution.y;
+//
+//     float is = 0.0;
+//     for (int i = 0; i < STEPS_MAX; i++) {
+//         vec3 p = ro + d * rd;
+//         hit = map_primary(p);
+//         is++;
+//
+//         float r = hit.d;
+//
+//         float threshold = 0.001 + (d * r_pixel/2.0);
+//         if (abs(r) < threshold && hit.material.type == MATERIAL_TYPE_PORTAL) {
+//             world_ray = hit.world_target;
+//             vec3 n = get_portal(world_ray)[1];
+//             float a = abs(dot(n, rd));
+//             a = max(a, 1e-8);
+//             d += (20.0*threshold) / a;
+//
+//             r_prev = 0.0;
+//             step = 0.0;
+//             error_candidate = 1e8;
+//             continue;
+//         }
+//
+//         bool overstep = (omega > 1.0) && (r + r_prev) < step; // step from previous iteration
+//         if (overstep) {
+//             d -= step;
+//             step = r_prev;
+//             omega = 1.0;
+//             continue;
+//         }
+//         else {
+//             step = r * omega;
+//             r_prev = r;
+//         }
+//
+//         float error = r / d;
+//
+//         if (!overstep && error < error_candidate) {
+//             d_candidate = d;
+//             error_candidate = error;
+//             material_candidate = hit.material;
+//             target_candidate = hit.world_target;
+//         }
+//
+//         if (!overstep && error < r_pixel && hit.material.type != MATERIAL_TYPE_PORTAL) break;
+//         if (r < threshold) break;
+//
+//         if (d > D_MAX) return Hit(1e8, material_candidate, NULL);
+//
+//         d += step;
+//     }
+//
+// #ifdef DEBUG
+//     return Hit(is, material_candidate, target_candidate);
+// #endif
+//
+//     if (error_candidate > r_pixel * 1.5) {
+//         return Hit(1e8, material_candidate, NULL);
+//     }
+//
+//     return Hit(d_candidate, material_candidate, target_candidate);
+// }
 
 vec3 normal(vec3 p) {
     vec2 e = vec2(1.0, -1.0) * 0.0001;
@@ -870,7 +966,7 @@ void main() {
         vec3 n = normal(p);
         vec3 v = normalize(ro - p);
 
-        vec3 light_pos = u.camera.pos;
+        vec3 light_pos = u.camera.pos + vec3(0.0, 5.0, 0.0);
         vec3 light_color = vec3(1.0, 1.0, 1.0);
         Light lamp = Light(light_pos, light_color, 1500.0);
         vec3 direct = lighting(p, n, v, lamp, hit.material);

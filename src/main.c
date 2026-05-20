@@ -304,8 +304,6 @@ EMSCRIPTEN_KEEPALIVE void build_pipelines() {
     wgpuShaderModuleRelease(sm_compute);
     wgpuShaderModuleRelease(sm_vertex);
     wgpuShaderModuleRelease(sm_fragment);
-
-    printf("Pipelines build successful\n");
 }
 
 void show_fps(double t) {

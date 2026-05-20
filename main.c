@@ -636,6 +636,10 @@ void on_device_request(WGPURequestDeviceStatus status, WGPUDevice device, const 
 }
 
 void on_adapter_request(WGPURequestAdapterStatus status, WGPUAdapter adapter, const char* message, void* userdata) {
+    if (status != WGPURequestAdapterStatus_Success || adapter == NULL) {
+        printf("Failed to get WebGPU adapter: %s\n", message ? message : "Unknown error");
+        return;
+    }
     State* s = (State*)userdata;
     s->surface_format = wgpuSurfaceGetPreferredFormat(s->surface, adapter);
 
@@ -645,16 +649,18 @@ void on_adapter_request(WGPURequestAdapterStatus status, WGPUAdapter adapter, co
 int main() {
     // fix a stupid casting bug
     EM_ASM({
-        const originalWriteBuffer = GPUQueue.prototype.writeBuffer;
-        GPUQueue.prototype.writeBuffer = function(buffer, bufferOffset, data, dataOffset, size) {
-            return originalWriteBuffer.call(this,
-                buffer,
-                typeof bufferOffset === 'bigint' ? Number(bufferOffset) : bufferOffset,
-                data,
-                typeof dataOffset === 'bigint' ? Number(dataOffset) : dataOffset,
-                typeof size === 'bigint' ? Number(size) : size
-            );
-        };
+        if (typeof GPUQueue !== 'undefined' && GPUQueue.prototype.writeBuffer) {
+            const originalWriteBuffer = GPUQueue.prototype.writeBuffer;
+            GPUQueue.prototype.writeBuffer = function(buffer, bufferOffset, data, dataOffset, size) {
+                return originalWriteBuffer.call(this,
+                    buffer,
+                    typeof bufferOffset === 'bigint' ? Number(bufferOffset) : bufferOffset,
+                    data,
+                    typeof dataOffset === 'bigint' ? Number(dataOffset) : dataOffset,
+                    typeof size === 'bigint' ? Number(size) : size
+                );
+            };
+        }
     });
 
     State* s = (State*)malloc(sizeof(State));
@@ -680,6 +686,10 @@ int main() {
 
     s->surface = wgpuInstanceCreateSurface(instance, &surface_desc);
 
-    wgpuInstanceRequestAdapter(instance, NULL, on_adapter_request, s);
+    WGPURequestAdapterOptions adapter_opts = {
+        .compatibleSurface = s->surface
+    };
+
+    wgpuInstanceRequestAdapter(instance, &adapter_opts, on_adapter_request, s);
     return 0;
 }

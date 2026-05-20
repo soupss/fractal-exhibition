@@ -17,8 +17,10 @@ echo "WebSocket server listening on ws://localhost:$PORT"
 echo "Watching shaders/ for .glsl changes..."
 
 compile_and_notify() {
-    echo -e "Transpiling shader..."
-    naga --shader-stage compute --input-kind glsl shaders/compute.glsl shaders/compute.wgsl
+    echo -e "Transpiling shaders..."
+    naga --shader-stage compute --input-kind glsl shaders/compute.glsl shaders/compute.wgsl && \
+    naga --shader-stage vertex --input-kind glsl shaders/vertex.glsl shaders/vertex.wgsl && \
+    naga --shader-stage fragment --input-kind glsl shaders/fragment.glsl shaders/fragment.wgsl
     if [ $? -eq 0 ]; then
         echo "Success!"
         echo "shader_updated" >&3

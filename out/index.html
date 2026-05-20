@@ -84,7 +84,7 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
                     return prefix + path;
                 },
                 onRuntimeInitialized: function() {
-                    // if (window.location.hostname === 'localhost') {
+                    if (window.location.hostname === 'localhost') {
                         const ws = new WebSocket('ws://localhost:3000');
 
                         ws.onmessage = async (event) => {
@@ -102,7 +102,7 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
                                 Module.ccall('build_pipelines', null, [], []);
                             }
                         };
-                    // }
+                    }
                 }
             };
         </script>

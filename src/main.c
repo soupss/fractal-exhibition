@@ -38,6 +38,7 @@ typedef struct {
     bool a;
     bool s;
     bool d;
+    bool r;
     bool shift;
     bool space;
     bool control;
@@ -97,6 +98,7 @@ EM_BOOL on_key_down(int event_type, const EmscriptenKeyboardEvent *e, void *user
     if (strcmp(e->code, "KeyA") == 0) s->input.a = true;
     if (strcmp(e->code, "KeyS") == 0) s->input.s = true;
     if (strcmp(e->code, "KeyD") == 0) s->input.d = true;
+    if (strcmp(e->code, "KeyR") == 0) s->input.r = true;
     if (strcmp(e->code, "ShiftLeft") == 0) s->input.shift = true;
     if (strcmp(e->code, "Space") == 0) s->input.space = true;
     if (strcmp(e->code, "ControlLeft") == 0) s->input.control = true;
@@ -112,6 +114,7 @@ EM_BOOL on_key_up(int event_type, const EmscriptenKeyboardEvent *e, void *userda
     if (strcmp(e->code, "KeyA") == 0) s->input.a = false;
     if (strcmp(e->code, "KeyS") == 0) s->input.s = false;
     if (strcmp(e->code, "KeyD") == 0) s->input.d = false;
+    if (strcmp(e->code, "KeyR") == 0) s->input.r = false;
     if (strcmp(e->code, "ShiftLeft") == 0) s->input.shift = false;
     if (strcmp(e->code, "Space") == 0) s->input.space = false;
     if (strcmp(e->code, "ControlLeft") == 0) s->input.control = false;
@@ -188,6 +191,7 @@ void process_input(Input *input, Camera *camera, float dt) {
             camera->pos.y += camera->right.y * speed;
             camera->pos.z += camera->right.z * speed;
         }
+        if (input->r) camera->pos = (Vec3) { 0.0, 7.0, 0.0 };
         if (input->space) camera->pos.y += speed;
         if (input->control) camera->pos.y -= speed;
     }
@@ -306,7 +310,7 @@ EMSCRIPTEN_KEEPALIVE void build_pipelines() {
     wgpuShaderModuleRelease(sm_fragment);
 }
 
-void show_fps(double t) {
+void show_hud(double t, int width, int height) {
     static double t_last = 0.0;
     static int frames = 0;
     if (t_last == 0.0) t_last = t;
@@ -320,8 +324,10 @@ void show_fps(double t) {
         EM_ASM({
             const fps = $0;
             const t = $1;
+            const w = $2;
+            const h = $3;
 
-            document.getElementById('fps-counter').innerText = Math.round(fps);
+            document.getElementById('hud-debug').innerText = `${Math.round(fps)}fps\n${w}x${h}`;
 
             let list = window.fps_list;
             list.push([fps, t]);
@@ -329,7 +335,7 @@ void show_fps(double t) {
             if (list.length > 400) {
                 list.shift();
             }
-        }, fps, t);
+        }, fps, t, width, height);
 
         frames = 0;
         t_last = t;
@@ -345,7 +351,7 @@ void loop(void* userdata) {
     float dt = t - t_prev;
     t_prev = t;
 
-    show_fps(t);
+    show_hud(t, (int)s->resolution.x, (int)s->resolution.y);
 
     Vec3 camera_pos_prev = s->camera.pos;
 

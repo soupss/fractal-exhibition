@@ -210,16 +210,16 @@ vec3 palette(float k, vec3 a, vec3 b, vec3 c, vec3 d) {
 
 // returns 2d value noise and its two derivatives
 vec3 noised_value(vec2 p) {
-    vec2 id = floor(p);
+    vec2 i = floor(p);
     vec2 f = fract(p);
 
     vec2 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
     vec2 du = 30.0 * f * f * (f * (f - 2.0) + 1.0);
 
-    float a = hash21(id);
-    float b = hash21(id + vec2(1.0, 0.0));
-    float c = hash21(id + vec2(0.0, 1.0));
-    float d = hash21(id + vec2(1.0, 1.0));
+    float a = hash21(i);
+    float b = hash21(i + vec2(1.0, 0.0));
+    float c = hash21(i + vec2(0.0, 1.0));
+    float d = hash21(i + vec2(1.0, 1.0));
 
     float k0 = a;
     float k1 = b - a;
@@ -233,29 +233,46 @@ vec3 noised_value(vec2 p) {
     return vec3(noise, grad.x, grad.y);
 }
 
-float noise_gradient(vec2 p) {
+// returns 2d value noise and its two derivatives
+vec3 noised_gradient(vec2 p) {
     vec2 i = floor(p);
     vec2 f = fract(p);
 
+    // u
+    // 6t^5 - 15t^4 + 10t^3
     vec2 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+    vec2 du = 30.0 * f * f * (f * (f - 2.0) + 1.0);
 
-    vec2 g00 = hash22(i + vec2(0.0, 0.0));
-    vec2 g10 = hash22(i + vec2(1.0, 0.0));
-    vec2 g01 = hash22(i + vec2(0.0, 1.0));
-    vec2 g11 = hash22(i + vec2(1.0, 1.0));
+    vec2 ga = hash22(i);
+    vec2 gb = hash22(i + vec2(1.0, 0.0));
+    vec2 gc = hash22(i + vec2(0.0, 1.0));
+    vec2 gd = hash22(i + vec2(1.0, 1.0));
 
-    float d00 = dot(g00, f - vec2(0.0, 0.0));
-    float d10 = dot(g10, f - vec2(1.0, 0.0));
-    float d01 = dot(g01, f - vec2(0.0, 1.0));
-    float d11 = dot(g11, f - vec2(1.0, 1.0));
+    // v
+    float va = dot(ga, f - vec2(0.0, 0.0));
+    float vb = dot(gb, f - vec2(1.0, 0.0));
+    float vc = dot(gc, f - vec2(0.0, 1.0));
+    float vd = dot(gd, f - vec2(1.0, 1.0));
 
-    float x0 = mix(d00, d10, u.x);
-    float x1 = mix(d01, d11, u.x);
-    float n = mix(x0, x1, u.y);
+    float k0 = va;
+    float k1 = vb - va;
+    float k2 = vc - va;
+    float k3 = va - vb - vc + vd;
 
-    return n;
+    float noise = k0 + k1*u.x + k2*u.y + k3*u.x*u.y;
+
+    // u*dv
+    vec2 grad_g = mix(mix(ga, gb, u.x), mix(gc, gd, u.x), u.y);
+    // du*v
+    vec2 grad_v = du*vec2(k1 + k3*u.y, k2 + k3*u.x);
+
+    // u*dv + du*v
+    vec2 grad = grad_v + grad_g;
+
+    return vec3(0.5*noise + 0.5, grad)/0.807;
 }
 
+// used for snow texture
 float fbm(vec2 p, int octaves) {
     float h = 0.0;
     float amp = 1.0;
@@ -263,7 +280,7 @@ float fbm(vec2 p, int octaves) {
     const mat2 rot = mat2(0.8, -0.6, 0.6, 0.8);
 
     for (int i = 0; i < octaves; i++) {
-        h += amp*noise_gradient(p);
+        h += amp*noised_gradient(p).x;
 
         amp *= 0.5;
         p = rot*p*2.0;
@@ -283,7 +300,7 @@ vec3 terrain(vec2 p, int octaves) {
 
     mat2 m = mat2(1.0, 0.0, 0.0, 1.0);
     for (int i = 0; i < octaves; i++) {
-        vec3 n = noised_value(p);
+        vec3 n = noised_gradient(p);
 
         vec2 grad_octave = m * n.yz;
 
@@ -590,7 +607,7 @@ vec2 raymarch_sdf(vec3 ro, vec3 rd) {
         float t = hit.x;
         float id = hit.y;
 
-        if (abs(t) < 0.0001) { //TODO: tune threshold
+        if (abs(t) < 0.001) { //TODO: tune threshold
             return vec2(t_res, id);
         }
 
@@ -668,8 +685,8 @@ vec2 raymarch(vec3 ro, vec3 rd) {
                 world_ray = int(id - MATERIAL_PORTAL_BASE);
 
                 vec3 n = get_portal(world_ray)[1];
-                float a = max(abs(dot(n, rd)), 1e-8);
-                t_res += 1.0 / a;
+                float a = max(abs(dot(n, rd)), 1e-6);
+                t_res += 0.01 / a;
                 continue;
             }
 

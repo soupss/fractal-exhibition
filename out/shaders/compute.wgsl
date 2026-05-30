@@ -377,7 +377,7 @@ fn palette(k_4: f32, a_6: vec3<f32>, b_6: vec3<f32>, c_1: vec3<f32>, d: vec3<f32
 
 fn noised_value(p_20: vec2<f32>) -> vec3<f32> {
     var p_21: vec2<f32>;
-    var id: vec2<f32>;
+    var i: vec2<f32>;
     var f: vec2<f32>;
     var u: vec2<f32>;
     var du: vec2<f32>;
@@ -394,7 +394,7 @@ fn noised_value(p_20: vec2<f32>) -> vec3<f32> {
 
     p_21 = p_20;
     let _e18 = p_21;
-    id = floor(_e18);
+    i = floor(_e18);
     let _e21 = p_21;
     f = fract(_e21);
     let _e24 = f;
@@ -408,16 +408,16 @@ fn noised_value(p_20: vec2<f32>) -> vec3<f32> {
     let _e47 = f;
     let _e48 = f;
     du = (((30f * _e43) * _e45) * ((_e47 * (_e48 - vec2(2f))) + vec2(1f)));
-    let _e58 = id;
+    let _e58 = i;
     let _e59 = hash21_(_e58);
     a_8 = _e59;
-    let _e61 = id;
+    let _e61 = i;
     let _e66 = hash21_((_e61 + vec2<f32>(1f, 0f)));
     b_8 = _e66;
-    let _e68 = id;
+    let _e68 = i;
     let _e73 = hash21_((_e68 + vec2<f32>(0f, 1f)));
     c_3 = _e73;
-    let _e75 = id;
+    let _e75 = i;
     let _e80 = hash21_((_e75 + vec2<f32>(1f, 1f)));
     d_2 = _e80;
     let _e82 = a_8;
@@ -456,26 +456,32 @@ fn noised_value(p_20: vec2<f32>) -> vec3<f32> {
     return vec3<f32>(_e136, _e137.x, _e139.y);
 }
 
-fn noise_gradient(p_22: vec2<f32>) -> f32 {
+fn noised_gradient(p_22: vec2<f32>) -> vec3<f32> {
     var p_23: vec2<f32>;
-    var i: vec2<f32>;
+    var i_1: vec2<f32>;
     var f_1: vec2<f32>;
     var u_1: vec2<f32>;
-    var g00_: vec2<f32>;
-    var g10_: vec2<f32>;
-    var g01_: vec2<f32>;
-    var g11_: vec2<f32>;
-    var d00_: f32;
-    var d10_: f32;
-    var d01_: f32;
-    var d11_: f32;
-    var x0_: f32;
-    var x1_: f32;
-    var n_4: f32;
+    var du_1: vec2<f32>;
+    var ga: vec2<f32>;
+    var gb: vec2<f32>;
+    var gc: vec2<f32>;
+    var gd: vec2<f32>;
+    var va: f32;
+    var vb: f32;
+    var vc: f32;
+    var vd: f32;
+    var k0_2: f32;
+    var k1_2: f32;
+    var k2_1: f32;
+    var k3_1: f32;
+    var noise_1: f32;
+    var grad_g: vec2<f32>;
+    var grad_v: vec2<f32>;
+    var grad_1: vec2<f32>;
 
     p_23 = p_22;
     let _e18 = p_23;
-    i = floor(_e18);
+    i_1 = floor(_e18);
     let _e21 = p_23;
     f_1 = fract(_e21);
     let _e24 = f_1;
@@ -484,44 +490,79 @@ fn noise_gradient(p_22: vec2<f32>) -> f32 {
     let _e29 = f_1;
     let _e30 = f_1;
     u_1 = (((_e24 * _e25) * _e27) * ((_e29 * ((_e30 * 6f) - vec2(15f))) + vec2(10f)));
-    let _e42 = i;
-    let _e47 = hash22_((_e42 + vec2<f32>(0f, 0f)));
-    g00_ = _e47;
-    let _e49 = i;
-    let _e54 = hash22_((_e49 + vec2<f32>(1f, 0f)));
-    g10_ = _e54;
-    let _e56 = i;
-    let _e61 = hash22_((_e56 + vec2<f32>(0f, 1f)));
-    g01_ = _e61;
-    let _e63 = i;
-    let _e68 = hash22_((_e63 + vec2<f32>(1f, 1f)));
-    g11_ = _e68;
-    let _e70 = g00_;
-    let _e71 = f_1;
-    d00_ = dot(_e70, (_e71 - vec2<f32>(0f, 0f)));
-    let _e78 = g10_;
-    let _e79 = f_1;
-    d10_ = dot(_e78, (_e79 - vec2<f32>(1f, 0f)));
-    let _e86 = g01_;
-    let _e87 = f_1;
-    d01_ = dot(_e86, (_e87 - vec2<f32>(0f, 1f)));
-    let _e94 = g11_;
-    let _e95 = f_1;
-    d11_ = dot(_e94, (_e95 - vec2<f32>(1f, 1f)));
-    let _e102 = d00_;
-    let _e103 = d10_;
-    let _e104 = u_1;
-    x0_ = mix(_e102, _e103, _e104.x);
-    let _e108 = d01_;
-    let _e109 = d11_;
-    let _e110 = u_1;
-    x1_ = mix(_e108, _e109, _e110.x);
-    let _e114 = x0_;
-    let _e115 = x1_;
-    let _e116 = u_1;
-    n_4 = mix(_e114, _e115, _e116.y);
-    let _e120 = n_4;
-    return _e120;
+    let _e43 = f_1;
+    let _e45 = f_1;
+    let _e47 = f_1;
+    let _e48 = f_1;
+    du_1 = (((30f * _e43) * _e45) * ((_e47 * (_e48 - vec2(2f))) + vec2(1f)));
+    let _e58 = i_1;
+    let _e59 = hash22_(_e58);
+    ga = _e59;
+    let _e61 = i_1;
+    let _e66 = hash22_((_e61 + vec2<f32>(1f, 0f)));
+    gb = _e66;
+    let _e68 = i_1;
+    let _e73 = hash22_((_e68 + vec2<f32>(0f, 1f)));
+    gc = _e73;
+    let _e75 = i_1;
+    let _e80 = hash22_((_e75 + vec2<f32>(1f, 1f)));
+    gd = _e80;
+    let _e82 = ga;
+    let _e83 = f_1;
+    va = dot(_e82, (_e83 - vec2<f32>(0f, 0f)));
+    let _e90 = gb;
+    let _e91 = f_1;
+    vb = dot(_e90, (_e91 - vec2<f32>(1f, 0f)));
+    let _e98 = gc;
+    let _e99 = f_1;
+    vc = dot(_e98, (_e99 - vec2<f32>(0f, 1f)));
+    let _e106 = gd;
+    let _e107 = f_1;
+    vd = dot(_e106, (_e107 - vec2<f32>(1f, 1f)));
+    let _e114 = va;
+    k0_2 = _e114;
+    let _e116 = vb;
+    let _e117 = va;
+    k1_2 = (_e116 - _e117);
+    let _e120 = vc;
+    let _e121 = va;
+    k2_1 = (_e120 - _e121);
+    let _e124 = va;
+    let _e125 = vb;
+    let _e127 = vc;
+    let _e129 = vd;
+    k3_1 = (((_e124 - _e125) - _e127) + _e129);
+    let _e132 = k0_2;
+    let _e133 = k1_2;
+    let _e134 = u_1;
+    let _e138 = k2_1;
+    let _e139 = u_1;
+    let _e143 = k3_1;
+    let _e144 = u_1;
+    let _e147 = u_1;
+    noise_1 = (((_e132 + (_e133 * _e134.x)) + (_e138 * _e139.y)) + ((_e143 * _e144.x) * _e147.y));
+    let _e152 = ga;
+    let _e153 = gb;
+    let _e154 = u_1;
+    let _e158 = gc;
+    let _e159 = gd;
+    let _e160 = u_1;
+    let _e164 = u_1;
+    grad_g = mix(mix(_e152, _e153, vec2(_e154.x)), mix(_e158, _e159, vec2(_e160.x)), vec2(_e164.y));
+    let _e169 = du_1;
+    let _e170 = k1_2;
+    let _e171 = k3_1;
+    let _e172 = u_1;
+    let _e176 = k2_1;
+    let _e177 = k3_1;
+    let _e178 = u_1;
+    grad_v = (_e169 * vec2<f32>((_e170 + (_e171 * _e172.y)), (_e176 + (_e177 * _e178.x))));
+    let _e185 = grad_v;
+    let _e186 = grad_g;
+    grad_1 = (_e185 + _e186);
+    let _e190 = noise_1;
+    let _e194 = grad_1;
+    return (vec3<f32>(((0.5f * _e190) + 0.5f), _e194.x, _e194.y) / vec3(0.807f));
 }
 
 fn fbm(p_24: vec2<f32>, octaves: i32) -> f32 {
@@ -530,12 +571,12 @@ fn fbm(p_24: vec2<f32>, octaves: i32) -> f32 {
     var h: f32 = 0f;
     var amp: f32 = 1f;
     var rot: mat2x2<f32> = mat2x2<f32>(vec2<f32>(0.8f, -0.6f), vec2<f32>(0.6f, 0.8f));
-    var i_1: i32 = 0i;
+    var i_2: i32 = 0i;
 
     p_25 = p_24;
     octaves_1 = octaves;
     loop {
-        let _e35 = i_1;
+        let _e35 = i_2;
         let _e36 = octaves_1;
         if !((_e35 < _e36)) {
             break;
@@ -544,60 +585,60 @@ fn fbm(p_24: vec2<f32>, octaves: i32) -> f32 {
             let _e42 = h;
             let _e43 = amp;
             let _e44 = p_25;
-            let _e45 = noise_gradient(_e44);
-            h = (_e42 + (_e43 * _e45));
-            let _e48 = amp;
-            amp = (_e48 * 0.5f);
-            let _e51 = rot;
-            let _e52 = p_25;
-            p_25 = ((_e51 * _e52) * 2f);
+            let _e45 = noised_gradient(_e44);
+            h = (_e42 + (_e43 * _e45.x));
+            let _e49 = amp;
+            amp = (_e49 * 0.5f);
+            let _e52 = rot;
+            let _e53 = p_25;
+            p_25 = ((_e52 * _e53) * 2f);
         }
         continuing {
-            let _e39 = i_1;
-            i_1 = (_e39 + 1i);
+            let _e39 = i_2;
+            i_2 = (_e39 + 1i);
         }
     }
-    let _e57 = h;
-    return ((0.5f * _e57) + 0.5f);
+    let _e58 = h;
+    return ((0.5f * _e58) + 0.5f);
 }
 
 fn terrain(p_26: vec2<f32>, octaves_2: i32) -> vec3<f32> {
     var p_27: vec2<f32>;
     var octaves_3: i32;
     var h_1: f32 = 0f;
-    var grad_1: vec2<f32> = vec2(0f);
+    var grad_2: vec2<f32> = vec2(0f);
     var grad_eroded: vec2<f32> = vec2(0f);
     var amp_1: f32 = 1f;
     var rot_1: mat2x2<f32> = mat2x2<f32>(vec2<f32>(0.8f, -0.6f), vec2<f32>(0.6f, 0.8f));
     var m: mat2x2<f32> = mat2x2<f32>(vec2<f32>(1f, 0f), vec2<f32>(0f, 1f));
-    var i_2: i32 = 0i;
-    var n_5: vec3<f32>;
+    var i_3: i32 = 0i;
+    var n_4: vec3<f32>;
     var grad_octave: vec2<f32>;
     var erosion: f32;
 
     p_27 = p_26;
     octaves_3 = octaves_2;
     loop {
-        let _e49 = i_2;
+        let _e49 = i_3;
         let _e50 = octaves_3;
         if !((_e49 < _e50)) {
             break;
         }
         {
             let _e56 = p_27;
-            let _e57 = noised_value(_e56);
-            n_5 = _e57;
+            let _e57 = noised_gradient(_e56);
+            n_4 = _e57;
             let _e59 = m;
-            let _e60 = n_5;
+            let _e60 = n_4;
             grad_octave = (_e59 * _e60.yz);
-            let _e64 = grad_1;
+            let _e64 = grad_2;
             let _e65 = grad_octave;
-            grad_1 = (_e64 + _e65);
-            let _e69 = grad_1;
-            let _e70 = grad_1;
+            grad_2 = (_e64 + _e65);
+            let _e69 = grad_2;
+            let _e70 = grad_2;
             erosion = (1f / (1f + dot(_e69, _e70)));
             let _e75 = h_1;
-            let _e76 = n_5;
+            let _e76 = n_4;
             let _e78 = amp_1;
             let _e80 = erosion;
             h_1 = (_e75 + ((_e76.x * _e78) * _e80));
@@ -615,8 +656,8 @@ fn terrain(p_26: vec2<f32>, octaves_2: i32) -> vec3<f32> {
             m = (transpose(_e96) * _e98);
         }
         continuing {
-            let _e53 = i_2;
-            i_2 = (_e53 + 1i);
+            let _e53 = i_3;
+            i_3 = (_e53 + 1i);
         }
     }
     let _e100 = h_1;
@@ -627,47 +668,47 @@ fn terrain(p_26: vec2<f32>, octaves_2: i32) -> vec3<f32> {
 fn get_portal(world: i32) -> mat2x3<f32> {
     var world_1: i32;
     var pos: vec3<f32>;
-    var n_6: vec3<f32>;
+    var n_5: vec3<f32>;
 
     world_1 = world;
     let _e20 = world_1;
     if (_e20 == 2i) {
         {
             pos = vec3<f32>(10f, 4f, 0f);
-            n_6 = vec3<f32>(-1f, 0f, 0f);
+            n_5 = vec3<f32>(-1f, 0f, 0f);
         }
     } else {
         let _e32 = world_1;
         if (_e32 == 1i) {
             {
                 pos = vec3<f32>(3.09017f, 4f, 9.51057f);
-                n_6 = vec3<f32>(-0.309017f, 0f, -0.951057f);
+                n_5 = vec3<f32>(-0.309017f, 0f, -0.951057f);
             }
         } else {
             let _e45 = world_1;
             if (_e45 == 3i) {
                 {
                     pos = vec3<f32>(-8.09017f, 4f, 5.87785f);
-                    n_6 = vec3<f32>(0.809017f, 0f, -0.587785f);
+                    n_5 = vec3<f32>(0.809017f, 0f, -0.587785f);
                 }
             } else {
                 let _e58 = world_1;
                 if (_e58 == 4i) {
                     {
                         pos = vec3<f32>(-8.09017f, 4f, -5.87785f);
-                        n_6 = vec3<f32>(0.809017f, 0f, 0.587785f);
+                        n_5 = vec3<f32>(0.809017f, 0f, 0.587785f);
                     }
                 } else {
                     let _e71 = world_1;
                     if (_e71 == 5i) {
                         {
                             pos = vec3<f32>(3.09017f, 4f, -9.51057f);
-                            n_6 = vec3<f32>(-0.309017f, 0f, 0.951057f);
+                            n_5 = vec3<f32>(-0.309017f, 0f, 0.951057f);
                         }
                     } else {
                         {
                             pos = vec3(0f);
-                            n_6 = vec3<f32>(0f, 0f, 1f);
+                            n_5 = vec3<f32>(0f, 0f, 1f);
                         }
                     }
                 }
@@ -675,7 +716,7 @@ fn get_portal(world: i32) -> mat2x3<f32> {
         }
     }
     let _e90 = pos;
-    let _e91 = n_6;
+    let _e91 = n_5;
     return mat2x3<f32>(vec3<f32>(_e90.x, _e90.y, _e90.z), vec3<f32>(_e91.x, _e91.y, _e91.z));
 }
 
@@ -683,7 +724,7 @@ fn portal_entered(world_2: i32) -> bool {
     var world_3: i32;
     var portal: mat2x3<f32>;
     var pos_1: vec3<f32>;
-    var n_7: vec3<f32>;
+    var n_6: vec3<f32>;
     var cam_pos_relative: vec3<f32>;
     var cam_pos_relative_prev: vec3<f32>;
     var z: f32;
@@ -707,7 +748,7 @@ fn portal_entered(world_2: i32) -> bool {
     let _e23 = portal[0];
     pos_1 = _e23;
     let _e27 = portal[1];
-    n_7 = _e27;
+    n_6 = _e27;
     let _e29 = u_2;
     let _e32 = pos_1;
     cam_pos_relative = (_e29.camera.pos - _e32);
@@ -715,17 +756,17 @@ fn portal_entered(world_2: i32) -> bool {
     let _e37 = pos_1;
     cam_pos_relative_prev = (_e35.camera_pos_prev - _e37);
     let _e40 = cam_pos_relative;
-    let _e41 = n_7;
+    let _e41 = n_6;
     z = dot(_e40, _e41);
     let _e44 = cam_pos_relative_prev;
-    let _e45 = n_7;
+    let _e45 = n_6;
     z_prev = dot(_e44, _e45);
     let _e48 = z;
     let _e50 = z_prev;
     if (sign(_e48) != sign(_e50)) {
         {
             let _e58 = up_1;
-            let _e59 = n_7;
+            let _e59 = n_6;
             right_1 = normalize(cross(_e58, _e59));
             let _e63 = cam_pos_relative;
             let _e64 = right_1;
@@ -758,7 +799,7 @@ fn portal_entered(world_2: i32) -> bool {
 }
 
 fn get_world() -> i32 {
-    var i_3: i32 = 0i;
+    var i_4: i32 = 0i;
     var local_1: array<i32, 5> = SUB_WORLDS;
     var world_4: i32;
 
@@ -766,12 +807,12 @@ fn get_world() -> i32 {
     if (_e16 == 0i) {
         {
             loop {
-                let _e21 = i_3;
+                let _e21 = i_4;
                 if !((_e21 < 5i)) {
                     break;
                 }
                 {
-                    let _e28 = i_3;
+                    let _e28 = i_4;
                     let _e32 = local_1[_e28];
                     world_4 = _e32;
                     let _e34 = world_4;
@@ -782,8 +823,8 @@ fn get_world() -> i32 {
                     }
                 }
                 continuing {
-                    let _e25 = i_3;
-                    i_3 = (_e25 + 1i);
+                    let _e25 = i_4;
+                    i_4 = (_e25 + 1i);
                 }
             }
             return 0i;
@@ -840,13 +881,13 @@ fn map_fractal(p_30: vec3<f32>) -> vec2<f32> {
     var q_1: vec3<f32>;
     var res_1: vec2<f32>;
     var s_1: f32 = 11f;
-    var id_1: vec2<f32>;
+    var id: vec2<f32>;
     var d_bound: f32;
     var rot_xz: mat2x2<f32>;
     var rot_xy: mat2x2<f32>;
     var scale: f32 = 2f;
     var scaled: f32 = 1f;
-    var i_4: i32 = 0i;
+    var i_5: i32 = 0i;
     var d_3: f32;
 
     p_31 = p_30;
@@ -872,15 +913,15 @@ fn map_fractal(p_30: vec3<f32>) -> vec2<f32> {
     q_1 = (_e55 - vec3<f32>(0f, (3.5f + (0.35f * sin((0.8f * _e60.t)))), -18f));
     let _e72 = q_1;
     let _e74 = s_1;
-    id_1 = round((_e72.xy / vec2(_e74)));
-    let _e79 = id_1;
-    let _e84 = id_1;
+    id = round((_e72.xy / vec2(_e74)));
+    let _e79 = id;
+    let _e84 = id;
     if ((_e79.y > 0f) && (_e84.y < 10f)) {
         {
             let _e90 = q_1;
             let _e92 = q_1;
             let _e94 = s_1;
-            let _e95 = id_1;
+            let _e95 = id;
             let _e98 = (_e92.xy - (_e94 * round(_e95)));
             q_1.x = _e98.x;
             q_1.y = _e98.y;
@@ -925,8 +966,8 @@ fn map_fractal(p_30: vec3<f32>) -> vec2<f32> {
                     let _e168 = rotate_2d((0.15f * _e165.t));
                     rot_xy = _e168;
                     loop {
-                        let _e176 = i_4;
-                        let _e177 = id_1;
+                        let _e176 = i_5;
+                        let _e177 = id;
                         if !((f32(_e176) < _e177.y)) {
                             break;
                         }
@@ -955,8 +996,8 @@ fn map_fractal(p_30: vec3<f32>) -> vec2<f32> {
                             scaled = (_e218 * _e219);
                         }
                         continuing {
-                            let _e182 = i_4;
-                            i_4 = (_e182 + 1i);
+                            let _e182 = i_5;
+                            i_5 = (_e182 + 1i);
                         }
                     }
                     let _e221 = q_1;
@@ -1090,7 +1131,7 @@ fn heightmap_mountain_octaves(p_38: vec2<f32>, octaves_4: i32) -> vec4<f32> {
     var fbm_1: vec3<f32>;
     var h_4: f32;
     var amp_3: f32;
-    var grad_2: vec2<f32>;
+    var grad_3: vec2<f32>;
 
     p_39 = p_38;
     octaves_5 = octaves_4;
@@ -1114,9 +1155,9 @@ fn heightmap_mountain_octaves(p_38: vec2<f32>, octaves_4: i32) -> vec4<f32> {
     let _e48 = fbm_1;
     let _e50 = freq;
     let _e52 = amp_3;
-    grad_2 = ((_e48.yz * _e50) * _e52);
+    grad_3 = ((_e48.yz * _e50) * _e52);
     let _e55 = h_4;
-    let _e56 = grad_2;
+    let _e56 = grad_3;
     return vec4<f32>(_e55, _e56.x, _e56.y, 2f);
 }
 
@@ -1198,7 +1239,7 @@ fn map(p_42: vec3<f32>) -> vec2<f32> {
 fn map_portals(p_44: vec3<f32>) -> vec2<f32> {
     var p_45: vec3<f32>;
     var res_3: vec2<f32> = vec2<f32>(100000000f, 0f);
-    var i_5: i32 = 0i;
+    var i_6: i32 = 0i;
     var local_2: array<i32, 5> = SUB_WORLDS;
     var world_dst: i32;
     var portal_2: mat2x3<f32>;
@@ -1211,12 +1252,12 @@ fn map_portals(p_44: vec3<f32>) -> vec2<f32> {
     if (_e22 == 0i) {
         {
             loop {
-                let _e27 = i_5;
+                let _e27 = i_6;
                 if !((_e27 < 5i)) {
                     break;
                 }
                 {
-                    let _e34 = i_5;
+                    let _e34 = i_6;
                     let _e38 = local_2[_e34];
                     world_dst = _e38;
                     let _e40 = world_dst;
@@ -1234,8 +1275,8 @@ fn map_portals(p_44: vec3<f32>) -> vec2<f32> {
                     res_3 = _e60;
                 }
                 continuing {
-                    let _e31 = i_5;
-                    i_5 = (_e31 + 1i);
+                    let _e31 = i_6;
+                    i_6 = (_e31 + 1i);
                 }
             }
         }
@@ -1289,16 +1330,16 @@ fn raymarch_sdf(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
     var rd_1: vec3<f32>;
     var t_res: f32 = 0.001f;
     var t_max_4: f32 = 100f;
-    var i_6: i32 = 0i;
+    var i_7: i32 = 0i;
     var p_48: vec3<f32>;
     var hit: vec2<f32>;
     var t_4: f32;
-    var id_2: f32;
+    var id_1: f32;
 
     ro_1 = ro;
     rd_1 = rd;
     loop {
-        let _e26 = i_6;
+        let _e26 = i_7;
         if !((_e26 < 256i)) {
             break;
         }
@@ -1318,12 +1359,12 @@ fn raymarch_sdf(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
             let _e46 = hit;
             t_4 = _e46.x;
             let _e49 = hit;
-            id_2 = _e49.y;
+            id_1 = _e49.y;
             let _e52 = t_4;
-            if (abs(_e52) < 0.0001f) {
+            if (abs(_e52) < 0.001f) {
                 {
                     let _e56 = t_res;
-                    let _e57 = id_2;
+                    let _e57 = id_1;
                     return vec2<f32>(_e56, _e57);
                 }
             }
@@ -1339,8 +1380,8 @@ fn raymarch_sdf(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
             }
         }
         continuing {
-            let _e30 = i_6;
-            i_6 = (_e30 + 1i);
+            let _e30 = i_7;
+            i_7 = (_e30 + 1i);
         }
     }
     return vec2(-1f);
@@ -1355,11 +1396,11 @@ fn raymarch_terrain(ro_2: vec3<f32>, rd_2: vec3<f32>) -> vec2<f32> {
     var rd_is_up: bool;
     var portal_4: mat2x3<f32>;
     var h_portal: f32;
-    var i_7: i32 = 0i;
+    var i_8: i32 = 0i;
     var p_49: vec3<f32>;
     var hm: vec4<f32>;
     var h_5: f32;
-    var id_3: f32;
+    var id_2: f32;
     var dh: f32;
     var d_portal: f32;
     var dt: f32;
@@ -1397,7 +1438,7 @@ fn raymarch_terrain(ro_2: vec3<f32>, rd_2: vec3<f32>) -> vec2<f32> {
         }
     }
     loop {
-        let _e69 = i_7;
+        let _e69 = i_8;
         if !((_e69 < 256i)) {
             break;
         }
@@ -1414,7 +1455,7 @@ fn raymarch_terrain(ro_2: vec3<f32>, rd_2: vec3<f32>) -> vec2<f32> {
             let _e88 = hm;
             h_5 = _e88.x;
             let _e91 = hm;
-            id_3 = _e91.w;
+            id_2 = _e91.w;
             let _e94 = p_49;
             let _e96 = h_5;
             dh = (_e94.y - _e96);
@@ -1423,7 +1464,7 @@ fn raymarch_terrain(ro_2: vec3<f32>, rd_2: vec3<f32>) -> vec2<f32> {
             if (abs(_e99) < (0.001f * _e102)) {
                 {
                     let _e105 = t_5;
-                    let _e106 = id_3;
+                    let _e106 = id_2;
                     return vec2<f32>(_e105, _e106);
                 }
             }
@@ -1454,8 +1495,8 @@ fn raymarch_terrain(ro_2: vec3<f32>, rd_2: vec3<f32>) -> vec2<f32> {
             }
         }
         continuing {
-            let _e73 = i_7;
-            i_7 = (_e73 + 1i);
+            let _e73 = i_8;
+            i_8 = (_e73 + 1i);
         }
     }
     return vec2(-1f);
@@ -1468,8 +1509,8 @@ fn raymarch(ro_4: vec3<f32>, rd_4: vec3<f32>) -> vec2<f32> {
     var ro_current: vec3<f32>;
     var hit_1: vec2<f32>;
     var t_6: f32;
-    var id_4: f32;
-    var n_8: vec3<f32>;
+    var id_3: f32;
+    var n_7: vec3<f32>;
     var a_9: f32;
 
     ro_5 = ro_4;
@@ -1499,32 +1540,32 @@ fn raymarch(ro_4: vec3<f32>, rd_4: vec3<f32>) -> vec2<f32> {
             let _e41 = hit_1;
             t_6 = _e41.x;
             let _e44 = hit_1;
-            id_4 = _e44.y;
+            id_3 = _e44.y;
             let _e47 = t_6;
             if (_e47 > 0f) {
                 {
                     let _e50 = t_res_1;
                     let _e51 = t_6;
                     t_res_1 = (_e50 + _e51);
-                    let _e53 = id_4;
+                    let _e53 = id_3;
                     if (_e53 >= 100f) {
                         {
-                            let _e56 = id_4;
+                            let _e56 = id_3;
                             world_ray = i32((_e56 - 100f));
                             let _e61 = world_ray;
                             let _e62 = get_portal(_e61);
-                            n_8 = _e62[1];
-                            let _e65 = n_8;
+                            n_7 = _e62[1];
+                            let _e65 = n_7;
                             let _e66 = rd_5;
-                            a_9 = max(abs(dot(_e65, _e66)), 0.00000001f);
+                            a_9 = max(abs(dot(_e65, _e66)), 0.000001f);
                             let _e72 = t_res_1;
                             let _e74 = a_9;
-                            t_res_1 = (_e72 + (1f / _e74));
+                            t_res_1 = (_e72 + (0.01f / _e74));
                             continue;
                         }
                     }
                     let _e77 = t_res_1;
-                    let _e78 = id_4;
+                    let _e78 = id_3;
                     return vec2<f32>(_e77, _e78);
                 }
             } else {
@@ -1539,7 +1580,7 @@ fn normal_numerical(p_50: vec3<f32>, t_7: f32) -> vec3<f32> {
     var p_51: vec3<f32>;
     var t_8: f32;
     var e: vec2<f32>;
-    var n_9: vec3<f32>;
+    var n_8: vec3<f32>;
     var o: i32 = 12i;
 
     p_51 = p_50;
@@ -1577,7 +1618,7 @@ fn normal_numerical(p_50: vec3<f32>, t_7: f32) -> vec3<f32> {
             let _e99 = e;
             let _e102 = o;
             let _e103 = heightmap_mountain_octaves((_e97.xz + _e99.xx), _e102);
-            n_9 = normalize(((((_e37.xyy * ((_e39.y + _e41.y) - _e50.x)) + (_e54.yyx * ((_e56.y + _e58.y) - _e67.x))) + (_e72.yxy * ((_e74.y + _e76.x) - _e85.x))) + (_e90.xxx * ((_e92.y + _e94.x) - _e103.x))));
+            n_8 = normalize(((((_e37.xyy * ((_e39.y + _e41.y) - _e50.x)) + (_e54.yyx * ((_e56.y + _e58.y) - _e67.x))) + (_e72.yxy * ((_e74.y + _e76.x) - _e85.x))) + (_e90.xxx * ((_e92.y + _e94.x) - _e103.x))));
         }
     } else {
         {
@@ -1597,33 +1638,33 @@ fn normal_numerical(p_50: vec3<f32>, t_7: f32) -> vec3<f32> {
             let _e140 = p_51;
             let _e141 = e;
             let _e144 = map((_e140 + _e141.xxx));
-            n_9 = normalize(((((_e109.xyy * _e115.x) + (_e118.yyx * _e124.x)) + (_e128.yxy * _e134.x)) + (_e138.xxx * _e144.x)));
+            n_8 = normalize(((((_e109.xyy * _e115.x) + (_e118.yyx * _e124.x)) + (_e128.yxy * _e134.x)) + (_e138.xxx * _e144.x)));
         }
     }
-    let _e149 = n_9;
+    let _e149 = n_8;
     return _e149;
 }
 
 fn normal_analytical(p_52: vec2<f32>) -> vec3<f32> {
     var p_53: vec2<f32>;
-    var grad_3: vec2<f32>;
-    var n_10: vec3<f32>;
+    var grad_4: vec2<f32>;
+    var n_9: vec3<f32>;
 
     p_53 = p_52;
     let _e18 = p_53;
     let _e20 = heightmap_mountain_octaves(_e18, 12i);
-    grad_3 = _e20.yz;
-    let _e23 = grad_3;
-    let _e27 = grad_3;
-    n_10 = normalize(vec3<f32>(-(_e23.x), 1f, -(_e27.y)));
-    let _e33 = n_10;
+    grad_4 = _e20.yz;
+    let _e23 = grad_4;
+    let _e27 = grad_4;
+    n_9 = normalize(vec3<f32>(-(_e23.x), 1f, -(_e27.y)));
+    let _e33 = n_9;
     return _e33;
 }
 
 fn normal(p_54: vec3<f32>, t_9: f32) -> vec3<f32> {
     var p_55: vec3<f32>;
     var t_10: f32;
-    var n_11: vec3<f32>;
+    var n_10: vec3<f32>;
 
     p_55 = p_54;
     t_10 = t_9;
@@ -1632,9 +1673,9 @@ fn normal(p_54: vec3<f32>, t_9: f32) -> vec3<f32> {
         let _e22 = p_55;
         let _e23 = t_10;
         let _e24 = normal_numerical(_e22, _e23);
-        n_11 = _e24;
+        n_10 = _e24;
     }
-    let _e25 = n_11;
+    let _e25 = n_10;
     return _e25;
 }
 
@@ -1644,7 +1685,7 @@ fn shadow(ro_6: vec3<f32>, rd_6: vec3<f32>, d_max: f32) -> f32 {
     var d_max_1: f32;
     var d_7: f32 = 0.1f;
     var occlusion: f32 = 1f;
-    var i_8: i32 = 0i;
+    var i_9: i32 = 0i;
     var p_56: vec3<f32>;
     var h_6: f32;
 
@@ -1652,7 +1693,7 @@ fn shadow(ro_6: vec3<f32>, rd_6: vec3<f32>, d_max: f32) -> f32 {
     rd_7 = rd_6;
     d_max_1 = d_max;
     loop {
-        let _e28 = i_8;
+        let _e28 = i_9;
         let _e31 = d_7;
         let _e32 = d_max_1;
         if !(((_e28 < 128i) && (_e31 < _e32))) {
@@ -1679,8 +1720,8 @@ fn shadow(ro_6: vec3<f32>, rd_6: vec3<f32>, d_max: f32) -> f32 {
             d_7 = (_e60 + _e61);
         }
         continuing {
-            let _e36 = i_8;
-            i_8 = (_e36 + 1i);
+            let _e36 = i_9;
+            i_9 = (_e36 + 1i);
         }
     }
     let _e63 = occlusion;
@@ -1698,28 +1739,28 @@ fn shadow_terrain(ro_8: vec3<f32>, rd_8: vec3<f32>, d_max_2: f32) -> f32 {
     return 0f;
 }
 
-fn ambient_occlusion_sdf(p_57: vec3<f32>, n_12: vec3<f32>) -> f32 {
+fn ambient_occlusion_sdf(p_57: vec3<f32>, n_11: vec3<f32>) -> f32 {
     var p_58: vec3<f32>;
-    var n_13: vec3<f32>;
+    var n_12: vec3<f32>;
     var scale_1: f32 = 1f;
     var occlusion_1: f32 = 0f;
-    var i_9: i32 = 1i;
+    var i_10: i32 = 1i;
     var h_7: f32;
     var d_8: f32;
 
     p_58 = p_57;
-    n_13 = n_12;
+    n_12 = n_11;
     loop {
-        let _e26 = i_9;
+        let _e26 = i_10;
         if !((_e26 <= 4i)) {
             break;
         }
         {
-            let _e34 = i_9;
+            let _e34 = i_10;
             h_7 = (0.04f * f32(_e34));
             let _e38 = p_58;
             let _e39 = h_7;
-            let _e40 = n_13;
+            let _e40 = n_12;
             let _e43 = map((_e38 + (_e39 * _e40)));
             d_8 = _e43.x;
             let _e46 = occlusion_1;
@@ -1731,8 +1772,8 @@ fn ambient_occlusion_sdf(p_57: vec3<f32>, n_12: vec3<f32>) -> f32 {
             scale_1 = (_e53 * 0.95f);
         }
         continuing {
-            let _e30 = i_9;
-            i_9 = (_e30 + 1i);
+            let _e30 = i_10;
+            i_10 = (_e30 + 1i);
         }
     }
     let _e57 = occlusion_1;
@@ -1743,21 +1784,21 @@ fn ambient_occlusion_terrain(p_59: vec3<f32>) -> f32 {
     var p_60: vec3<f32>;
     var offsets: array<vec2<f32>, 4> = array<vec2<f32>, 4>(vec2<f32>(1f, 0f), vec2<f32>(0f, 1f), vec2<f32>(-1f, 0f), vec2<f32>(0f, -1f));
     var occlusion_2: f32 = 1f;
-    var i_10: i32 = 0i;
+    var i_11: i32 = 0i;
     var q_3: vec2<f32>;
     var h_8: f32;
     var dh_1: f32;
 
     p_60 = p_59;
     loop {
-        let _e38 = i_10;
+        let _e38 = i_11;
         if !((_e38 < 4i)) {
             break;
         }
         {
             let _e45 = p_60;
             let _e47 = p_60;
-            let _e50 = i_10;
+            let _e50 = i_11;
             let _e52 = offsets[_e50];
             let _e54 = (_e47.xz + (0.1f * _e52));
             p_60.x = _e54.x;
@@ -1774,21 +1815,21 @@ fn ambient_occlusion_terrain(p_59: vec3<f32>) -> f32 {
             occlusion_2 = (_e72 - (0.5f * _e74));
         }
         continuing {
-            let _e42 = i_10;
-            i_10 = (_e42 + 1i);
+            let _e42 = i_11;
+            i_11 = (_e42 + 1i);
         }
     }
     let _e77 = occlusion_2;
     return _e77;
 }
 
-fn ambient_occlusion(p_61: vec3<f32>, n_14: vec3<f32>) -> f32 {
+fn ambient_occlusion(p_61: vec3<f32>, n_13: vec3<f32>) -> f32 {
     var p_62: vec3<f32>;
-    var n_15: vec3<f32>;
+    var n_14: vec3<f32>;
     var ao: f32;
 
     p_62 = p_61;
-    n_15 = n_14;
+    n_14 = n_13;
     let _e21 = use_heightmap();
     if _e21 {
         {
@@ -1799,7 +1840,7 @@ fn ambient_occlusion(p_61: vec3<f32>, n_14: vec3<f32>) -> f32 {
     } else {
         {
             let _e24 = p_62;
-            let _e25 = n_15;
+            let _e25 = n_14;
             let _e26 = ambient_occlusion_sdf(_e24, _e25);
             ao = _e26;
         }
@@ -1808,8 +1849,8 @@ fn ambient_occlusion(p_61: vec3<f32>, n_14: vec3<f32>) -> f32 {
     return _e27;
 }
 
-fn distribution(n_16: vec3<f32>, h_9: vec3<f32>, roughness: f32) -> f32 {
-    var n_17: vec3<f32>;
+fn distribution(n_15: vec3<f32>, h_9: vec3<f32>, roughness: f32) -> f32 {
+    var n_16: vec3<f32>;
     var h_10: vec3<f32>;
     var roughness_1: f32;
     var a_10: f32;
@@ -1819,7 +1860,7 @@ fn distribution(n_16: vec3<f32>, h_9: vec3<f32>, roughness: f32) -> f32 {
     var num: f32;
     var denom: f32;
 
-    n_17 = n_16;
+    n_16 = n_15;
     h_10 = h_9;
     roughness_1 = roughness;
     let _e22 = roughness_1;
@@ -1828,7 +1869,7 @@ fn distribution(n_16: vec3<f32>, h_9: vec3<f32>, roughness: f32) -> f32 {
     let _e26 = a_10;
     let _e27 = a_10;
     a2_ = (_e26 * _e27);
-    let _e30 = n_17;
+    let _e30 = n_16;
     let _e31 = h_10;
     nh = max(dot(_e30, _e31), 0f);
     let _e36 = nh;
@@ -1865,8 +1906,8 @@ fn fresnel(v: vec3<f32>, h_11: vec3<f32>, f0_: vec3<f32>) -> vec3<f32> {
     return (_e28 + ((vec3(1f) - _e30) * pow(clamp((1f - _e34), 0f, 1f), 5f)));
 }
 
-fn g1_(n_18: vec3<f32>, dir: vec3<f32>, roughness_2: f32) -> f32 {
-    var n_19: vec3<f32>;
+fn g1_(n_17: vec3<f32>, dir: vec3<f32>, roughness_2: f32) -> f32 {
+    var n_18: vec3<f32>;
     var dir_1: vec3<f32>;
     var roughness_3: f32;
     var r_4: f32;
@@ -1875,7 +1916,7 @@ fn g1_(n_18: vec3<f32>, dir: vec3<f32>, roughness_2: f32) -> f32 {
     var num_1: f32;
     var denom_1: f32;
 
-    n_19 = n_18;
+    n_18 = n_17;
     dir_1 = dir;
     roughness_3 = roughness_2;
     let _e22 = roughness_3;
@@ -1883,7 +1924,7 @@ fn g1_(n_18: vec3<f32>, dir: vec3<f32>, roughness_2: f32) -> f32 {
     let _e26 = r_4;
     let _e27 = r_4;
     k_6 = ((_e26 * _e27) / 8f);
-    let _e32 = n_19;
+    let _e32 = n_18;
     let _e33 = dir_1;
     cos_theta_1 = max(dot(_e32, _e33), 0f);
     let _e38 = cos_theta_1;
@@ -1897,24 +1938,24 @@ fn g1_(n_18: vec3<f32>, dir: vec3<f32>, roughness_2: f32) -> f32 {
     return (_e48 / _e49);
 }
 
-fn geometry(n_20: vec3<f32>, v_2: vec3<f32>, l: vec3<f32>, roughness_4: f32) -> f32 {
-    var n_21: vec3<f32>;
+fn geometry(n_19: vec3<f32>, v_2: vec3<f32>, l: vec3<f32>, roughness_4: f32) -> f32 {
+    var n_20: vec3<f32>;
     var v_3: vec3<f32>;
     var l_1: vec3<f32>;
     var roughness_5: f32;
     var masking: f32;
     var shadowing: f32;
 
-    n_21 = n_20;
+    n_20 = n_19;
     v_3 = v_2;
     l_1 = l;
     roughness_5 = roughness_4;
-    let _e24 = n_21;
+    let _e24 = n_20;
     let _e25 = v_3;
     let _e26 = roughness_5;
     let _e27 = g1_(_e24, _e25, _e26);
     masking = _e27;
-    let _e29 = n_21;
+    let _e29 = n_20;
     let _e30 = l_1;
     let _e31 = roughness_5;
     let _e32 = g1_(_e29, _e30, _e31);
@@ -1924,9 +1965,9 @@ fn geometry(n_20: vec3<f32>, v_2: vec3<f32>, l: vec3<f32>, roughness_4: f32) -> 
     return (_e34 * _e35);
 }
 
-fn light_direct(p_63: vec3<f32>, n_22: vec3<f32>, v_4: vec3<f32>, light: Light, material: Material) -> vec3<f32> {
+fn light_direct(p_63: vec3<f32>, n_21: vec3<f32>, v_4: vec3<f32>, light: Light, material: Material) -> vec3<f32> {
     var p_64: vec3<f32>;
-    var n_23: vec3<f32>;
+    var n_22: vec3<f32>;
     var v_5: vec3<f32>;
     var light_1: Light;
     var material_1: Material;
@@ -1947,7 +1988,7 @@ fn light_direct(p_63: vec3<f32>, n_22: vec3<f32>, v_4: vec3<f32>, light: Light, 
     var brdf: vec3<f32>;
 
     p_64 = p_63;
-    n_23 = n_22;
+    n_22 = n_21;
     v_5 = v_4;
     light_1 = light;
     material_1 = material;
@@ -1971,12 +2012,12 @@ fn light_direct(p_63: vec3<f32>, n_22: vec3<f32>, v_4: vec3<f32>, light: Light, 
     let _e61 = light_1;
     let _e64 = attenuation;
     radiance = ((_e59.color * _e61.strength) * _e64);
-    let _e67 = n_23;
+    let _e67 = n_22;
     let _e68 = h_13;
     let _e69 = material_1;
     let _e71 = distribution(_e67, _e68, _e69.roughness);
     D = _e71;
-    let _e73 = n_23;
+    let _e73 = n_22;
     let _e74 = v_5;
     let _e75 = l_2;
     let _e76 = material_1;
@@ -1991,9 +2032,9 @@ fn light_direct(p_63: vec3<f32>, n_22: vec3<f32>, v_4: vec3<f32>, light: Light, 
     let _e86 = G;
     let _e88 = F;
     num_2 = ((_e85 * _e86) * _e88);
-    let _e92 = n_23;
+    let _e92 = n_22;
     let _e93 = v_5;
-    let _e98 = n_23;
+    let _e98 = n_22;
     let _e99 = l_2;
     denom_2 = (((4f * max(dot(_e92, _e93), 0f)) * max(dot(_e98, _e99), 0f)) + 0.0001f);
     let _e107 = num_2;
@@ -2012,14 +2053,14 @@ fn light_direct(p_63: vec3<f32>, n_22: vec3<f32>, v_4: vec3<f32>, light: Light, 
     brdf = (((_e125 * _e126.albedo) / vec3(3.1415927f)) + _e132);
     let _e135 = brdf;
     let _e136 = radiance;
-    let _e138 = n_23;
+    let _e138 = n_22;
     let _e139 = l_2;
     return ((_e135 * _e136) * max(dot(_e138, _e139), 0f));
 }
 
-fn lighting(p_65: vec3<f32>, n_24: vec3<f32>, v_6: vec3<f32>, material_2: Material, t_11: f32) -> vec3<f32> {
+fn lighting(p_65: vec3<f32>, n_23: vec3<f32>, v_6: vec3<f32>, material_2: Material, t_11: f32) -> vec3<f32> {
     var p_66: vec3<f32>;
-    var n_25: vec3<f32>;
+    var n_24: vec3<f32>;
     var v_7: vec3<f32>;
     var material_3: Material;
     var t_12: f32;
@@ -2044,23 +2085,23 @@ fn lighting(p_65: vec3<f32>, n_24: vec3<f32>, v_6: vec3<f32>, material_2: Materi
     var ambient: vec3<f32>;
 
     p_66 = p_65;
-    n_25 = n_24;
+    n_24 = n_23;
     v_7 = v_6;
     material_3 = material_2;
     t_12 = t_11;
     let _e29 = use_heightmap();
     if _e29 {
         {
-            let _e57 = n_25;
+            let _e57 = n_24;
             let _e58 = dir_sun;
             diffuse_sun = clamp(dot(_e57, _e58), 0f, 1f);
-            let _e66 = n_25;
+            let _e66 = n_24;
             diffuse_sky = clamp((0.5f + (0.5f * _e66.y)), 0f, 1f);
-            let _e74 = n_25;
+            let _e74 = n_24;
             let _e75 = dir_sun;
             diffuse_ind = clamp(dot(_e74, normalize((_e75 * vec3<f32>(-1f, 0f, -1f)))), 0f, 1f);
             let _e89 = p_66;
-            let _e90 = n_25;
+            let _e90 = n_24;
             let _e91 = ambient_occlusion(_e89, _e90);
             ao_1 = _e91;
             let _e93 = p_66;
@@ -2093,7 +2134,7 @@ fn lighting(p_65: vec3<f32>, n_24: vec3<f32>, v_6: vec3<f32>, material_2: Materi
             let _e137 = light_color;
             lamp = Light(_e136, _e137, 1500f);
             let _e141 = p_66;
-            let _e142 = n_25;
+            let _e142 = n_24;
             let _e143 = v_7;
             let _e144 = lamp;
             let _e145 = material_3;
@@ -2112,7 +2153,7 @@ fn lighting(p_65: vec3<f32>, n_24: vec3<f32>, v_6: vec3<f32>, material_2: Materi
             let _e162 = s_3;
             direct = (_e161 * _e162);
             let _e164 = p_66;
-            let _e165 = n_25;
+            let _e165 = n_24;
             let _e166 = ambient_occlusion(_e164, _e165);
             ao_2 = _e166;
             let _e170 = material_3;
@@ -2127,10 +2168,10 @@ fn lighting(p_65: vec3<f32>, n_24: vec3<f32>, v_6: vec3<f32>, material_2: Materi
     return _e179;
 }
 
-fn get_material(id_5: f32, p_67: vec3<f32>, n_26: vec3<f32>, t_13: f32) -> Material {
-    var id_6: f32;
+fn get_material(id_4: f32, p_67: vec3<f32>, n_25: vec3<f32>, t_13: f32) -> Material {
+    var id_5: f32;
     var p_68: vec3<f32>;
-    var n_27: vec3<f32>;
+    var n_26: vec3<f32>;
     var t_14: f32;
     var amp_4: f32;
     var r_5: f32;
@@ -2144,15 +2185,15 @@ fn get_material(id_5: f32, p_67: vec3<f32>, n_26: vec3<f32>, t_13: f32) -> Mater
     var s_4: f32;
     var snow: vec3<f32> = vec3(0.95f);
 
-    id_6 = id_5;
+    id_5 = id_4;
     p_68 = p_67;
-    n_27 = n_26;
+    n_26 = n_25;
     t_14 = t_13;
-    let _e24 = id_6;
+    let _e24 = id_5;
     if (_e24 == 1f) {
         return Material(vec3<f32>(1f, 0f, 0f), 0.5f, 0.5f);
     } else {
-        let _e34 = id_6;
+        let _e34 = id_5;
         if (_e34 == 2f) {
             {
                 let _e38 = get_heightmap_amplitude(3i);
@@ -2173,12 +2214,12 @@ fn get_material(id_5: f32, p_67: vec3<f32>, n_26: vec3<f32>, t_13: f32) -> Mater
                 let _e93 = color_1;
                 let _e94 = dirt;
                 let _e95 = r_5;
-                let _e103 = n_27;
+                let _e103 = n_26;
                 color_1 = mix(_e93, (_e94 * ((_e95 * 0.5f) + 0.5f)), vec3(smoothstep(0.75f, 0.9f, _e103.y)));
                 let _e113 = color_1;
                 let _e114 = grass;
                 let _e115 = r_5;
-                let _e123 = n_27;
+                let _e123 = n_26;
                 color_1 = mix(_e113, (_e114 * ((_e115 * 0.75f) + 0.25f)), vec3(smoothstep(0.95f, 1f, _e123.y)));
                 let _e129 = amp_4;
                 let _e132 = amp_4;
@@ -2189,7 +2230,7 @@ fn get_material(id_5: f32, p_67: vec3<f32>, n_26: vec3<f32>, t_13: f32) -> Mater
                 h_14 = smoothstep((0.55f * _e129), (0.65f * _e132), (_e134 + ((0.13f * _e136) * _e143)));
                 let _e150 = h_14;
                 let _e155 = h_14;
-                let _e160 = n_27;
+                let _e160 = n_26;
                 s_4 = smoothstep((1f - (0.5f * _e150)), (1f - (0.1f * _e155)), (0.25f + (0.75f * _e160.y)));
                 let _e169 = color_1;
                 let _e170 = snow;
@@ -2199,15 +2240,15 @@ fn get_material(id_5: f32, p_67: vec3<f32>, n_26: vec3<f32>, t_13: f32) -> Mater
                 return Material(_e174, 0.5f, 0.2f);
             }
         } else {
-            let _e178 = id_6;
+            let _e178 = id_5;
             if (_e178 == 3f) {
                 return Material(vec3<f32>(0f, 0f, 1f), 0.5f, 0.5f);
             } else {
-                let _e188 = id_6;
+                let _e188 = id_5;
                 if (_e188 == 4f) {
                     return Material(vec3<f32>(0.8f, 0.8f, 0.8f), 0.5f, 0.5f);
                 } else {
-                    let _e198 = id_6;
+                    let _e198 = id_5;
                     if (_e198 == 5f) {
                         return Material(vec3<f32>(1f, 0f, 1f), 0.5f, 0.5f);
                     }
@@ -2231,11 +2272,11 @@ fn main_1() {
     var material_id: f32;
     var color_2: vec3<f32> = vec3(0f);
     var p_69: vec3<f32>;
-    var n_28: vec3<f32>;
+    var n_27: vec3<f32>;
     var v_8: vec3<f32>;
     var material_4: Material;
     var light_3: vec3<f32>;
-    var noise_1: f32;
+    var noise_2: f32;
 
     let _e17 = gl_GlobalInvocationID_1;
     x_4 = _e17.x;
@@ -2303,18 +2344,18 @@ fn main_1() {
             let _e146 = p_69;
             let _e147 = t_15;
             let _e148 = normal(_e146, _e147);
-            n_28 = _e148;
+            n_27 = _e148;
             let _e150 = ro_10;
             let _e151 = p_69;
             v_8 = normalize((_e150 - _e151));
             let _e155 = material_id;
             let _e156 = p_69;
-            let _e157 = n_28;
+            let _e157 = n_27;
             let _e158 = t_15;
             let _e159 = get_material(_e155, _e156, _e157, _e158);
             material_4 = _e159;
             let _e161 = p_69;
-            let _e162 = n_28;
+            let _e162 = n_27;
             let _e163 = v_8;
             let _e164 = material_4;
             let _e165 = t_15;
@@ -2335,9 +2376,9 @@ fn main_1() {
     let _e177 = uv;
     let _e178 = u_2;
     let _e182 = hash21_((_e177 + vec2(_e178.t)));
-    noise_1 = ((_e182 * 2f) - 1f);
+    noise_2 = ((_e182 * 2f) - 1f);
     let _e188 = color_2;
-    let _e189 = noise_1;
+    let _e189 = noise_2;
     color_2 = (_e188 + vec3((_e189 * 0.003921569f)));
     let _e196 = x_4;
     let _e197 = y_3;

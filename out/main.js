@@ -912,9 +912,9 @@ function dbg(...args) {
 // === Body ===
 
 var ASM_CONSTS = {
-  135056: ($0, $1, $2, $3) => { const fps = $0; const t = $1; const w = $2; const h = $3; document.getElementById('hud-debug').innerText = `${Math.round(fps)}fps
+  139648: ($0, $1, $2, $3) => { const fps = $0; const t = $1; const w = $2; const h = $3; document.getElementById('hud-debug').innerText = `${Math.round(fps)}fps
 ${w}x${h}`; let list = window.fps_list; list.push([fps, t]); if (list.length > 400) { list.shift(); } },  
- 135292: () => { if (typeof GPUQueue !== 'undefined' && GPUQueue.prototype.writeBuffer) { const originalWriteBuffer = GPUQueue.prototype.writeBuffer; GPUQueue.prototype.writeBuffer = function(buffer, bufferOffset, data, dataOffset, size) { return originalWriteBuffer.call(this, buffer, typeof bufferOffset === 'bigint' ? Number(bufferOffset) : bufferOffset, data, typeof dataOffset === 'bigint' ? Number(dataOffset) : dataOffset, typeof size === 'bigint' ? Number(size) : size ); }; } }
+ 139884: () => { if (typeof GPUQueue !== 'undefined' && GPUQueue.prototype.writeBuffer) { const originalWriteBuffer = GPUQueue.prototype.writeBuffer; GPUQueue.prototype.writeBuffer = function(buffer, bufferOffset, data, dataOffset, size) { return originalWriteBuffer.call(this, buffer, typeof bufferOffset === 'bigint' ? Number(bufferOffset) : bufferOffset, data, typeof dataOffset === 'bigint' ? Number(dataOffset) : dataOffset, typeof size === 'bigint' ? Number(size) : size ); }; } }
 };
 
 // end include: preamble.js
@@ -7219,7 +7219,7 @@ var _asyncify_start_unwind = createExportWrapper('asyncify_start_unwind', 1);
 var _asyncify_stop_unwind = createExportWrapper('asyncify_stop_unwind', 0);
 var _asyncify_start_rewind = createExportWrapper('asyncify_start_rewind', 1);
 var _asyncify_stop_rewind = createExportWrapper('asyncify_stop_rewind', 0);
-var ___emscripten_embedded_file_data = Module['___emscripten_embedded_file_data'] = 129300;
+var ___emscripten_embedded_file_data = Module['___emscripten_embedded_file_data'] = 133892;
 
 // include: postamble.js
 // === Auto-generated postamble setup entry stuff ===

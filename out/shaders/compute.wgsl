@@ -1167,7 +1167,7 @@ fn heightmap_mountain(p_40: vec2<f32>, t: f32, t_max: f32) -> vec4<f32> {
     var p_41: vec2<f32>;
     var t_1: f32;
     var t_max_1: f32;
-    var oct_max: i32 = 9i;
+    var oct_max: i32 = 6i;
     var oct_min: i32 = 2i;
     var octaves_6: i32;
 
@@ -1327,69 +1327,100 @@ fn heightmap(p_46: vec2<f32>, t_2: f32, t_max_2: f32) -> vec4<f32> {
     return vec4(0f);
 }
 
-fn raymarch_sdf(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
+fn raymarch_sdf(ro: vec3<f32>, rd: vec3<f32>, t_global: f32) -> vec3<f32> {
     var ro_1: vec3<f32>;
     var rd_1: vec3<f32>;
-    var t_res: f32 = 0.001f;
+    var t_global_1: f32;
+    var t_tot: f32 = 0.001f;
+    var t_candidate: f32 = 0.001f;
+    var err_candidate: f32 = 100000000f;
+    var id_candidate: f32 = 0f;
     var t_max_4: f32 = 100f;
+    var pixel_radius: f32;
+    var steps: f32 = 0f;
     var i_7: i32 = 0i;
     var p_48: vec3<f32>;
     var hit: vec2<f32>;
     var t_4: f32;
     var id_1: f32;
+    var err: f32;
 
     ro_1 = ro;
     rd_1 = rd;
+    t_global_1 = t_global;
+    let _e34 = u_2;
+    pixel_radius = (1f / _e34.resolution.y);
     loop {
-        let _e27 = i_7;
-        if !((_e27 < 256i)) {
+        let _e43 = i_7;
+        if !((_e43 < 256i)) {
             break;
         }
         {
-            let _e34 = ro_1;
-            let _e35 = t_res;
-            let _e36 = rd_1;
-            p_48 = (_e34 + (_e35 * _e36));
-            let _e40 = p_48;
-            let _e41 = map(_e40);
-            hit = _e41;
-            let _e43 = hit;
-            let _e44 = p_48;
-            let _e45 = map_portals(_e44);
-            let _e46 = u_op(_e43, _e45);
-            hit = _e46;
-            let _e47 = hit;
-            t_4 = _e47.x;
-            let _e50 = hit;
-            id_1 = _e50.y;
-            let _e53 = t_4;
-            if (abs(_e53) < 0.001f) {
+            let _e50 = steps;
+            steps = (_e50 + 1f);
+            let _e53 = ro_1;
+            let _e54 = t_tot;
+            let _e55 = rd_1;
+            p_48 = (_e53 + (_e54 * _e55));
+            let _e59 = p_48;
+            let _e60 = map(_e59);
+            hit = _e60;
+            let _e62 = hit;
+            let _e63 = p_48;
+            let _e64 = map_portals(_e63);
+            let _e65 = u_op(_e62, _e64);
+            hit = _e65;
+            let _e66 = hit;
+            t_4 = _e66.x;
+            let _e69 = hit;
+            id_1 = _e69.y;
+            let _e72 = t_4;
+            let _e73 = t_global_1;
+            let _e74 = t_tot;
+            err = (_e72 / (_e73 + _e74));
+            let _e78 = err;
+            let _e79 = err_candidate;
+            if (_e78 < _e79) {
                 {
-                    let _e57 = t_res;
-                    let _e58 = id_1;
-                    return vec2<f32>(_e57, _e58);
+                    let _e81 = err;
+                    err_candidate = _e81;
+                    let _e82 = t_tot;
+                    t_candidate = _e82;
+                    let _e83 = id_1;
+                    id_candidate = _e83;
                 }
             }
-            let _e60 = t_res;
-            let _e61 = t_4;
-            t_res = (_e60 + _e61);
-            let _e63 = t_res;
-            let _e64 = t_max_4;
-            if (_e63 > _e64) {
+            let _e84 = err;
+            let _e86 = pixel_radius;
+            if (_e84 < (1f * _e86)) {
                 {
+                    break;
+                }
+            }
+            let _e89 = t_tot;
+            let _e90 = t_4;
+            t_tot = (_e89 + _e90);
+            let _e92 = t_tot;
+            let _e93 = t_max_4;
+            if (_e92 > _e93) {
+                {
+                    t_candidate = -1f;
                     break;
                 }
             }
         }
         continuing {
-            let _e31 = i_7;
-            i_7 = (_e31 + 1i);
+            let _e47 = i_7;
+            i_7 = (_e47 + 1i);
         }
     }
-    return vec2(-1f);
+    let _e97 = t_candidate;
+    let _e98 = id_candidate;
+    let _e99 = steps;
+    return vec3<f32>(_e97, _e98, _e99);
 }
 
-fn raymarch_terrain(ro_2: vec3<f32>, rd_2: vec3<f32>) -> vec2<f32> {
+fn raymarch_terrain(ro_2: vec3<f32>, rd_2: vec3<f32>) -> vec3<f32> {
     var ro_3: vec3<f32>;
     var rd_3: vec3<f32>;
     var t_5: f32 = 0.01f;
@@ -1398,6 +1429,7 @@ fn raymarch_terrain(ro_2: vec3<f32>, rd_2: vec3<f32>) -> vec2<f32> {
     var rd_is_up: bool;
     var portal_4: mat2x3<f32>;
     var h_portal: f32;
+    var steps_1: f32 = 0f;
     var i_8: i32 = 0i;
     var p_49: vec3<f32>;
     var hm: vec4<f32>;
@@ -1426,7 +1458,7 @@ fn raymarch_terrain(ro_2: vec3<f32>, rd_2: vec3<f32>) -> vec2<f32> {
     let _e48 = h_max;
     let _e50 = rd_is_up;
     if ((_e46.y > _e48) && _e50) {
-        return vec2(-1f);
+        return vec3(-1f);
     }
     let _e55 = ro_3;
     let _e57 = h_max;
@@ -1440,142 +1472,152 @@ fn raymarch_terrain(ro_2: vec3<f32>, rd_2: vec3<f32>) -> vec2<f32> {
         }
     }
     loop {
-        let _e70 = i_8;
-        if !((_e70 < 256i)) {
+        let _e72 = i_8;
+        if !((_e72 < 256i)) {
             break;
         }
         {
-            let _e77 = ro_3;
-            let _e78 = t_5;
-            let _e79 = rd_3;
-            p_49 = (_e77 + (_e78 * _e79));
-            let _e83 = p_49;
-            let _e85 = t_5;
-            let _e86 = t_max_5;
-            let _e87 = heightmap(_e83.xz, _e85, _e86);
-            hm = _e87;
-            let _e89 = hm;
-            h_5 = _e89.x;
-            let _e92 = hm;
-            id_2 = _e92.w;
-            let _e95 = p_49;
-            let _e97 = h_5;
-            dh = (_e95.y - _e97);
-            let _e100 = dh;
-            let _e103 = t_5;
-            if (abs(_e100) < (0.001f * _e103)) {
+            let _e79 = steps_1;
+            steps_1 = (_e79 + 1f);
+            let _e82 = ro_3;
+            let _e83 = t_5;
+            let _e84 = rd_3;
+            p_49 = (_e82 + (_e83 * _e84));
+            let _e88 = p_49;
+            let _e90 = t_5;
+            let _e91 = t_max_5;
+            let _e92 = heightmap(_e88.xz, _e90, _e91);
+            hm = _e92;
+            let _e94 = hm;
+            h_5 = _e94.x;
+            let _e97 = hm;
+            id_2 = _e97.w;
+            let _e100 = p_49;
+            let _e102 = h_5;
+            dh = (_e100.y - _e102);
+            let _e105 = dh;
+            let _e108 = t_5;
+            if (abs(_e105) < (0.001f * _e108)) {
                 {
-                    let _e106 = t_5;
-                    let _e107 = id_2;
-                    return vec2<f32>(_e106, _e107);
+                    let _e111 = t_5;
+                    let _e112 = id_2;
+                    let _e113 = steps_1;
+                    return vec3<f32>(_e111, _e112, _e113);
                 }
             }
-            let _e109 = p_49;
-            let _e112 = portal_4[0];
-            let _e118 = portal_4[1];
-            let _e120 = sd_portal((_e109 - _e112), (-1f * _e118));
-            d_portal = _e120;
-            let _e122 = d_portal;
-            if (_e122 < 0.001f) {
+            let _e115 = p_49;
+            let _e118 = portal_4[0];
+            let _e124 = portal_4[1];
+            let _e126 = sd_portal((_e115 - _e118), (-1f * _e124));
+            d_portal = _e126;
+            let _e128 = d_portal;
+            if (_e128 < 0.001f) {
                 {
-                    let _e125 = t_5;
-                    return vec2<f32>(_e125, 100f);
+                    let _e131 = t_5;
+                    let _e136 = steps_1;
+                    return vec3<f32>(_e131, 100f, _e136);
                 }
             }
-            let _e132 = dh;
-            dt = (0.45f * _e132);
-            let _e135 = dt;
-            let _e136 = d_portal;
-            dt = min(_e135, _e136);
-            let _e138 = t_5;
-            let _e139 = dt;
-            t_5 = (_e138 + _e139);
-            let _e141 = t_5;
-            let _e142 = t_max_5;
-            if (_e141 > _e142) {
+            let _e139 = dh;
+            dt = (0.45f * _e139);
+            let _e142 = dt;
+            let _e143 = d_portal;
+            dt = min(_e142, _e143);
+            let _e145 = t_5;
+            let _e146 = dt;
+            t_5 = (_e145 + _e146);
+            let _e148 = t_5;
+            let _e149 = t_max_5;
+            if (_e148 > _e149) {
                 break;
             }
         }
         continuing {
-            let _e74 = i_8;
-            i_8 = (_e74 + 1i);
+            let _e76 = i_8;
+            i_8 = (_e76 + 1i);
         }
     }
-    return vec2(-1f);
+    return vec3(-1f);
 }
 
-fn raymarch(ro_4: vec3<f32>, rd_4: vec3<f32>) -> vec2<f32> {
+fn raymarch(ro_4: vec3<f32>, rd_4: vec3<f32>) -> vec3<f32> {
     var ro_5: vec3<f32>;
     var rd_5: vec3<f32>;
-    var t_res_1: f32 = 0f;
+    var t_res: f32 = 0f;
+    var steps_2: f32 = 0f;
     var ro_current: vec3<f32>;
-    var hit_1: vec2<f32>;
+    var hit_1: vec3<f32>;
     var t_6: f32;
     var id_3: f32;
+    var steps_3: f32;
     var n_7: vec3<f32>;
     var a_9: f32;
 
     ro_5 = ro_4;
     rd_5 = rd_4;
     loop {
-        let _e23 = t_res_1;
-        if !((_e23 < 150f)) {
+        let _e25 = t_res;
+        if !((_e25 < 150f)) {
             break;
         }
         {
-            let _e28 = ro_5;
-            let _e29 = rd_5;
-            let _e30 = t_res_1;
-            ro_current = (_e28 + (_e29 * _e30));
-            let _e35 = use_heightmap();
-            if _e35 {
-                let _e36 = ro_current;
-                let _e37 = rd_5;
-                let _e38 = raymarch_terrain(_e36, _e37);
-                hit_1 = _e38;
+            let _e30 = ro_5;
+            let _e31 = rd_5;
+            let _e32 = t_res;
+            ro_current = (_e30 + (_e31 * _e32));
+            let _e37 = use_heightmap();
+            if _e37 {
+                let _e38 = ro_current;
+                let _e39 = rd_5;
+                let _e40 = raymarch_terrain(_e38, _e39);
+                hit_1 = _e40;
             } else {
-                let _e39 = ro_current;
-                let _e40 = rd_5;
-                let _e41 = raymarch_sdf(_e39, _e40);
-                hit_1 = _e41;
+                let _e41 = ro_current;
+                let _e42 = rd_5;
+                let _e43 = t_res;
+                let _e44 = raymarch_sdf(_e41, _e42, _e43);
+                hit_1 = _e44;
             }
-            let _e42 = hit_1;
-            t_6 = _e42.x;
             let _e45 = hit_1;
-            id_3 = _e45.y;
-            let _e48 = t_6;
-            if (_e48 > 0f) {
+            t_6 = _e45.x;
+            let _e48 = hit_1;
+            id_3 = _e48.y;
+            let _e51 = hit_1;
+            steps_3 = _e51.z;
+            let _e54 = t_6;
+            if (_e54 > 0f) {
                 {
-                    let _e51 = t_res_1;
-                    let _e52 = t_6;
-                    t_res_1 = (_e51 + _e52);
-                    let _e54 = id_3;
-                    if (_e54 >= 100f) {
+                    let _e57 = t_res;
+                    let _e58 = t_6;
+                    t_res = (_e57 + _e58);
+                    let _e60 = id_3;
+                    if (_e60 >= 100f) {
                         {
-                            let _e57 = id_3;
-                            world_ray = i32((_e57 - 100f));
-                            let _e62 = world_ray;
-                            let _e63 = get_portal(_e62);
-                            n_7 = _e63[1];
-                            let _e66 = n_7;
-                            let _e67 = rd_5;
-                            a_9 = max(abs(dot(_e66, _e67)), 0.000001f);
-                            let _e73 = t_res_1;
-                            let _e75 = a_9;
-                            t_res_1 = (_e73 + (0.01f / _e75));
+                            let _e63 = id_3;
+                            world_ray = i32((_e63 - 100f));
+                            let _e68 = world_ray;
+                            let _e69 = get_portal(_e68);
+                            n_7 = _e69[1];
+                            let _e72 = n_7;
+                            let _e73 = rd_5;
+                            a_9 = max(abs(dot(_e72, _e73)), 0.000001f);
+                            let _e79 = t_res;
+                            let _e81 = a_9;
+                            t_res = (_e79 + (0.1f / _e81));
                             continue;
                         }
                     }
-                    let _e78 = t_res_1;
-                    let _e79 = id_3;
-                    return vec2<f32>(_e78, _e79);
+                    let _e84 = t_res;
+                    let _e85 = id_3;
+                    let _e86 = steps_3;
+                    return vec3<f32>(_e84, _e85, _e86);
                 }
             } else {
                 break;
             }
         }
     }
-    return vec2(-1f);
+    return vec3(-1f);
 }
 
 fn normal_numerical(p_50: vec3<f32>, t_7: f32) -> vec3<f32> {
@@ -2266,9 +2308,10 @@ fn main_1() {
     var camera_orientation: mat3x3<f32>;
     var rd_10: vec3<f32>;
     var world_9: i32;
-    var hit_2: vec2<f32>;
+    var hit_2: vec3<f32>;
     var t_15: f32;
     var material_id: f32;
+    var steps_4: f32;
     var color_3: vec3<f32> = vec3(0f);
     var p_69: vec3<f32>;
     var hit_trap: vec4<f32>;
@@ -2276,7 +2319,6 @@ fn main_1() {
     var v_8: vec3<f32>;
     var material_4: Material;
     var light_3: vec3<f32>;
-    var noise_2: f32;
 
     let _e18 = gl_GlobalInvocationID_1;
     x_4 = _e18.x;
@@ -2334,67 +2376,62 @@ fn main_1() {
     t_15 = _e129.x;
     let _e132 = hit_2;
     material_id = _e132.y;
-    let _e138 = t_15;
-    if (_e138 > 0f) {
+    let _e135 = hit_2;
+    steps_4 = _e135.z;
+    let _e141 = t_15;
+    if (_e141 > 0f) {
         {
-            let _e141 = ro_10;
-            let _e142 = t_15;
-            let _e143 = rd_10;
-            p_69 = (_e141 + (_e142 * _e143));
+            let _e144 = ro_10;
+            let _e145 = t_15;
+            let _e146 = rd_10;
+            p_69 = (_e144 + (_e145 * _e146));
             g_trap = vec4(10000000000f);
-            let _e149 = world_ray;
-            if (_e149 == 1i) {
+            let _e152 = world_ray;
+            if (_e152 == 1i) {
                 {
-                    let _e152 = p_69;
-                    let _e153 = map_fractal(_e152);
+                    let _e155 = p_69;
+                    let _e156 = map_fractal(_e155);
                 }
             }
-            let _e154 = g_trap;
-            hit_trap = _e154;
-            let _e156 = p_69;
-            let _e157 = t_15;
-            let _e158 = normal(_e156, _e157);
-            n_27 = _e158;
-            let _e160 = ro_10;
-            let _e161 = p_69;
-            v_8 = normalize((_e160 - _e161));
-            let _e165 = material_id;
-            let _e166 = p_69;
-            let _e167 = n_27;
-            let _e168 = t_15;
-            let _e169 = hit_trap;
-            let _e170 = get_material(_e165, _e166, _e167, _e168, _e169);
-            material_4 = _e170;
-            let _e172 = p_69;
-            let _e173 = n_27;
-            let _e174 = v_8;
-            let _e175 = material_4;
-            let _e176 = t_15;
-            let _e177 = lighting(_e172, _e173, _e174, _e175, _e176);
-            light_3 = _e177;
-            let _e179 = light_3;
-            color_3 = _e179;
+            let _e157 = g_trap;
+            hit_trap = _e157;
+            let _e159 = p_69;
+            let _e160 = t_15;
+            let _e161 = normal(_e159, _e160);
+            n_27 = _e161;
+            let _e163 = ro_10;
+            let _e164 = p_69;
+            v_8 = normalize((_e163 - _e164));
+            let _e168 = material_id;
+            let _e169 = p_69;
+            let _e170 = n_27;
+            let _e171 = t_15;
+            let _e172 = hit_trap;
+            let _e173 = get_material(_e168, _e169, _e170, _e171, _e172);
+            material_4 = _e173;
+            let _e175 = p_69;
+            let _e176 = n_27;
+            let _e177 = v_8;
+            let _e178 = material_4;
+            let _e179 = t_15;
+            let _e180 = lighting(_e175, _e176, _e177, _e178, _e179);
+            light_3 = _e180;
+            let _e182 = light_3;
+            color_3 = _e182;
         }
     } else {
         {
-            let _e180 = world_ray;
-            let _e181 = get_bg(_e180);
-            color_3 = _e181;
+            let _e183 = world_ray;
+            let _e184 = get_bg(_e183);
+            color_3 = _e184;
         }
     }
-    let _e182 = color_3;
-    color_3 = pow(_e182, vec3(0.45454544f));
-    let _e188 = uv;
-    let _e189 = u_2;
-    let _e193 = hash21_((_e188 + vec2(_e189.t)));
-    noise_2 = ((_e193 * 2f) - 1f);
-    let _e199 = color_3;
-    let _e200 = noise_2;
-    color_3 = (_e199 + vec3((_e200 * 0.003921569f)));
-    let _e207 = x_4;
-    let _e208 = y_3;
-    let _e212 = color_3;
-    textureStore(rendertarget, vec2<i32>(i32(_e207), i32(_e208)), vec4<f32>(_e212.x, _e212.y, _e212.z, 1f));
+    let _e185 = color_3;
+    color_3 = pow(_e185, vec3(0.45454544f));
+    let _e191 = x_4;
+    let _e192 = y_3;
+    let _e196 = color_3;
+    textureStore(rendertarget, vec2<i32>(i32(_e191), i32(_e192)), vec4<f32>(_e196.x, _e196.y, _e196.z, 1f));
     return;
 }
 

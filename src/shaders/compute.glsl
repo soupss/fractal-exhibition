@@ -36,6 +36,7 @@ const int SUB_WORLDS[NUM_PORTALS] = {
     WORLD_SUB_CLOUD
 };
 
+// #define DEBUG
 #define PI 3.1415926535897932384626433832795
 #define D_MAX 150 //TODO: custom for each world
 #define STEPS_MAX 256
@@ -632,12 +633,14 @@ vec2 raymarch_terrain(vec3 ro, vec3 rd) {
 
     h_max = max(h_max, h_portal);
 
-    if (ro.y > h_max && rd_is_up ) return vec2(-1.0);
+    if (ro.y > h_max && rd_is_up ) return vec3(-1.0);
     if (ro.y > h_max) {
         t = max(t, (h_max - ro.y) / rd.y);
     }
 
+    float steps = 0.0;
     for (int i = 0; i < 256; i ++) {
+        steps++;
         vec3 p = ro + t*rd;
 
         vec4 hm = heightmap(p.xz, t, t_max);
@@ -646,12 +649,12 @@ vec2 raymarch_terrain(vec3 ro, vec3 rd) {
 
         float dh = p.y - h;
         if (abs(dh) < 0.001*t) {
-            return vec2(t, id);
+            return vec3(t, id, steps);
         }
 
         float d_portal = sd_portal(p - portal[0], -1.0 * portal[1]);
         if (d_portal < 0.001) {
-            return vec2(t, MATERIAL_PORTAL_BASE + float(WORLD_HUB));
+            return vec3(t, MATERIAL_PORTAL_BASE + float(WORLD_HUB), steps);
         }
 
         float dt = 0.45*dh;
@@ -660,22 +663,24 @@ vec2 raymarch_terrain(vec3 ro, vec3 rd) {
         t += dt;
         if (t > t_max) break;
     }
-    return vec2(-1.0);
+    return vec3(-1.0);
 }
 
-vec2 raymarch(vec3 ro, vec3 rd) {
+vec3 raymarch(vec3 ro, vec3 rd) {
     float t_res = 0.0;
+    float steps = 0.0;
 
     while (t_res < D_MAX) {
         vec3 ro_current = ro + rd*t_res;
 
-        vec2 hit;
+        vec3 hit;
 
         if (use_heightmap()) hit = raymarch_terrain(ro_current, rd);
-        else hit = raymarch_sdf(ro_current, rd);
+        else hit = raymarch_sdf(ro_current, rd, t_res);
 
         float t = hit.x;
         float id = hit.y;
+        float steps = hit.z;
 
         if (t > 0.0) {
             t_res += t;
@@ -685,15 +690,15 @@ vec2 raymarch(vec3 ro, vec3 rd) {
 
                 vec3 n = get_portal(world_ray)[1];
                 float a = max(abs(dot(n, rd)), 1e-6);
-                t_res += 0.01 / a;
+                t_res += 0.1 / a;
                 continue;
             }
 
-            return vec2(t_res, id);
+            return vec3(t_res, id, steps);
         }
         else break;
     }
-    return vec2(-1.0);
+    return vec3(-1.0);
 }
 
 // Hit march_old(vec3 ro, vec3 rd) {
@@ -998,7 +1003,6 @@ Material get_material(float id, vec3 p, vec3 n, float t, vec4 trap) {
         return Material(vec3(0.6, 0.5, 0.4), 0.8, 0.2);
     }
     else if (id == MATERIAL_MOUNTAIN ) {
-
         float amp = get_heightmap_amplitude(WORLD_SUB_MOUNTAIN);
         float r = noised_value(p.xz*0.01).x;
         float y = p.y+amp;
@@ -1052,12 +1056,16 @@ void main() {
     }
     else world_ray = world;
 
-    vec2 hit = raymarch(ro, rd);
+    vec3 hit = raymarch(ro, rd);
     float t = hit.x;
     float material_id = hit.y;
+    float steps = hit.z;
 
     vec3 color = vec3(0.0);
     if (t > 0.0) {
+#ifdef DEBUG
+        color = mix(vec3(0.0), vec3(1.0), steps/256);
+#else
         vec3 p = ro + t*rd;
 
         g_trap = vec4(1e10);
@@ -1073,6 +1081,7 @@ void main() {
         vec3 light = lighting(p, n, v, material, t);
 
         color = light;
+#endif
     }
     else {
         color = get_bg(world_ray);
@@ -1081,7 +1090,5 @@ void main() {
     color = pow(color, vec3(1.0 / 2.2)); // gamma correction
 
     // dithering to reduce color banding
-    float noise = hash21(uv + u.t) * 2.0 - 1.0;
-    color += noise * (1.0 / 255.0);
     imageStore(rendertarget, ivec2(x, y), vec4(color, 1.0));
 }

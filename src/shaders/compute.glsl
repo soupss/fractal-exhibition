@@ -548,7 +548,7 @@ vec4 heightmap_mountain_octaves(vec2 p, int octaves) {
 }
 
 vec4 heightmap_mountain(vec2 p, float t, float t_max) {
-    int oct_max = 9;
+    int oct_max = 6;
     int oct_min = 2;
     int octaves = int(round(oct_min + (oct_max-oct_min)*(1.0 - smoothstep(t_max/2.0, t_max, t))));
     return heightmap_mountain_octaves(p, octaves);
@@ -593,12 +593,20 @@ vec4 heightmap(vec2 p, float t, float t_max) {
 // engine //
 ////////////
 
-vec2 raymarch_sdf(vec3 ro, vec3 rd) {
-    float t_res = 0.001;
+vec3 raymarch_sdf(vec3 ro, vec3 rd, float t_global) {
+    float t_tot = 0.001;
+    float t_candidate = 0.001;
+    float err_candidate = 1e8;
+    float id_candidate = MATERIAL_NULL;
+
     float t_max = 100.0;
 
+    float pixel_radius = 1.0/u.resolution.y;
+
+    float steps = 0.0;
     for (int i = 0; i < 256; i++) {
-        vec3 p = ro + t_res*rd;
+        steps++;
+        vec3 p = ro + t_tot*rd;
 
         vec2 hit = map(p);
 
@@ -607,20 +615,29 @@ vec2 raymarch_sdf(vec3 ro, vec3 rd) {
         float t = hit.x;
         float id = hit.y;
 
-        if (abs(t) < 0.001) { //TODO: tune threshold
-            return vec2(t_res, id);
+        float err = t/(t_global + t_tot); // screen_space
+
+        if (err < err_candidate) {
+            err_candidate = err;
+            t_candidate = t_tot;
+            id_candidate = id;
         }
 
-        t_res += t;
+        if (err < 1.0*pixel_radius) { //TODO: tune threshold
+            break;
+        }
 
-        if (t_res > t_max) {
+        t_tot += t;
+
+        if (t_tot > t_max) {
+            t_candidate = -1.0;
             break;
         }
     }
-    return vec2(-1.0);
+    return vec3(t_candidate, id_candidate, steps);
 }
 
-vec2 raymarch_terrain(vec3 ro, vec3 rd) {
+vec3 raymarch_terrain(vec3 ro, vec3 rd) {
     float t = 0.01;
     const float t_max = 1600.0;
 

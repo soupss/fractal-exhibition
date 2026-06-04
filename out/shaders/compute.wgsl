@@ -626,44 +626,44 @@ fn terrain(p_26: vec2<f32>, octaves_2: i32) -> vec3<f32> {
             break;
         }
         {
-            let _e56 = p_27;
-            let _e57 = noised_gradient(_e56);
-            n_4 = _e57;
-            let _e59 = m;
-            let _e60 = n_4;
-            grad_octave = (_e59 * _e60.yz);
-            let _e64 = grad_2;
-            let _e65 = grad_octave;
-            grad_2 = (_e64 + _e65);
-            let _e69 = grad_2;
-            let _e70 = grad_2;
-            erosion = (1f / (1f + dot(_e69, _e70)));
-            let _e75 = h_1;
-            let _e76 = n_4;
-            let _e78 = amp_1;
-            let _e80 = erosion;
-            h_1 = (_e75 + ((_e76.x * _e78) * _e80));
-            let _e83 = grad_eroded;
-            let _e84 = grad_octave;
-            let _e85 = erosion;
-            grad_eroded = (_e83 + (_e84 * _e85));
-            let _e88 = amp_1;
-            amp_1 = (_e88 * 0.5f);
-            let _e91 = rot_1;
-            let _e92 = p_27;
-            p_27 = ((_e91 * _e92) * 2f);
-            let _e96 = rot_1;
-            let _e98 = m;
-            m = (transpose(_e96) * _e98);
+            let _e57 = p_27;
+            let _e59 = noised_gradient((0.5f * _e57));
+            n_4 = _e59;
+            let _e61 = m;
+            let _e62 = n_4;
+            grad_octave = (_e61 * _e62.yz);
+            let _e66 = grad_2;
+            let _e67 = grad_octave;
+            grad_2 = (_e66 + _e67);
+            let _e71 = grad_2;
+            let _e72 = grad_2;
+            erosion = (1f / (1f + dot(_e71, _e72)));
+            let _e77 = h_1;
+            let _e78 = n_4;
+            let _e80 = amp_1;
+            let _e82 = erosion;
+            h_1 = (_e77 + ((_e78.x * _e80) * _e82));
+            let _e85 = grad_eroded;
+            let _e86 = grad_octave;
+            let _e87 = erosion;
+            grad_eroded = (_e85 + (_e86 * _e87));
+            let _e90 = amp_1;
+            amp_1 = (_e90 * 0.5f);
+            let _e93 = rot_1;
+            let _e94 = p_27;
+            p_27 = ((_e93 * _e94) * 2f);
+            let _e98 = rot_1;
+            let _e100 = m;
+            m = (transpose(_e98) * _e100);
         }
         continuing {
             let _e53 = i_3;
             i_3 = (_e53 + 1i);
         }
     }
-    let _e100 = h_1;
-    let _e101 = grad_eroded;
-    return vec3<f32>(_e100, _e101.x, _e101.y);
+    let _e102 = h_1;
+    let _e103 = grad_eroded;
+    return vec3<f32>(_e102, _e103.x, _e103.y);
 }
 
 fn get_portal(world: i32) -> mat2x3<f32> {
@@ -1104,7 +1104,7 @@ fn get_heightmap_amplitude(world_7: i32) -> f32 {
     }
     let _e23 = world_8;
     if (_e23 == 3i) {
-        return 30f;
+        return 60f;
     } else {
         return -1f;
     }
@@ -1167,7 +1167,7 @@ fn heightmap_mountain(p_40: vec2<f32>, t: f32, t_max: f32) -> vec4<f32> {
     var p_41: vec2<f32>;
     var t_1: f32;
     var t_max_1: f32;
-    var oct_max: i32 = 6i;
+    var oct_max: i32 = 9i;
     var oct_min: i32 = 2i;
     var octaves_6: i32;
 
@@ -1583,7 +1583,7 @@ fn normal_numerical(p_50: vec3<f32>, t_7: f32) -> vec3<f32> {
     var t_8: f32;
     var e: vec2<f32>;
     var n_8: vec3<f32>;
-    var o: i32 = 9i;
+    var o: i32 = 11i;
 
     p_51 = p_50;
     t_8 = t_7;
@@ -1799,30 +1799,26 @@ fn ambient_occlusion_terrain(p_59: vec3<f32>) -> f32 {
         }
         {
             let _e46 = p_60;
-            let _e48 = p_60;
-            let _e51 = i_11;
-            let _e53 = offsets[_e51];
-            let _e55 = (_e48.xz + (0.1f * _e53));
-            p_60.x = _e55.x;
-            p_60.z = _e55.y;
-            q_3 = _e55;
-            let _e61 = p_60;
-            let _e65 = heightmap(_e61.xz, 0f, 0f);
-            h_8 = _e65.x;
-            let _e68 = p_60;
-            let _e70 = h_8;
-            dh_1 = (_e68.y - _e70);
-            let _e73 = occlusion_2;
-            let _e75 = dh_1;
-            occlusion_2 = (_e73 - (0.5f * _e75));
+            let _e49 = i_11;
+            let _e51 = offsets[_e49];
+            q_3 = (_e46.xz + (0.1f * _e51));
+            let _e55 = p_60;
+            let _e59 = heightmap(_e55.xz, 0f, 0f);
+            h_8 = _e59.x;
+            let _e62 = p_60;
+            let _e64 = h_8;
+            dh_1 = (_e62.y - _e64);
+            let _e67 = occlusion_2;
+            let _e69 = dh_1;
+            occlusion_2 = (_e67 - (0.5f * max(-(_e69), 0f)));
         }
         continuing {
             let _e43 = i_11;
             i_11 = (_e43 + 1i);
         }
     }
-    let _e78 = occlusion_2;
-    return _e78;
+    let _e75 = occlusion_2;
+    return _e75;
 }
 
 fn ambient_occlusion(p_61: vec3<f32>, n_13: vec3<f32>) -> f32 {
@@ -1832,23 +1828,12 @@ fn ambient_occlusion(p_61: vec3<f32>, n_13: vec3<f32>) -> f32 {
 
     p_62 = p_61;
     n_14 = n_13;
-    let _e22 = use_heightmap();
-    if _e22 {
-        {
-            let _e23 = p_62;
-            let _e24 = ambient_occlusion_terrain(_e23);
-            ao = _e24;
-        }
-    } else {
-        {
-            let _e25 = p_62;
-            let _e26 = n_14;
-            let _e27 = ambient_occlusion_sdf(_e25, _e26);
-            ao = _e27;
-        }
-    }
-    let _e28 = ao;
-    return _e28;
+    let _e22 = p_62;
+    let _e23 = n_14;
+    let _e24 = ambient_occlusion_sdf(_e22, _e23);
+    ao = _e24;
+    let _e25 = ao;
+    return _e25;
 }
 
 fn distribution(n_15: vec3<f32>, h_9: vec3<f32>, roughness: f32) -> f32 {
@@ -2074,7 +2059,7 @@ fn lighting(p_65: vec3<f32>, n_23: vec3<f32>, v_6: vec3<f32>, material_2: Materi
     var diffuse_sun: f32;
     var diffuse_sky: f32;
     var diffuse_ind: f32;
-    var ao_1: f32;
+    var ao_1: f32 = 1f;
     var s_2: f32;
     var light_2: vec3<f32>;
     var light_pos: vec3<f32>;
@@ -2102,72 +2087,68 @@ fn lighting(p_65: vec3<f32>, n_23: vec3<f32>, v_6: vec3<f32>, material_2: Materi
             let _e75 = n_24;
             let _e76 = dir_sun;
             diffuse_ind = clamp(dot(_e75, normalize((_e76 * vec3<f32>(-1f, 0f, -1f)))), 0f, 1f);
-            let _e90 = p_66;
-            let _e91 = n_24;
-            let _e92 = ambient_occlusion(_e90, _e91);
-            ao_1 = _e92;
-            let _e94 = p_66;
-            let _e95 = dir_sun;
-            let _e97 = shadow(_e94, _e95, 50f);
-            s_2 = _e97;
-            let _e99 = col_sun;
-            let _e100 = diffuse_sun;
-            let _e102 = s_2;
-            light_2 = ((_e99 * _e100) * _e102);
-            let _e105 = light_2;
-            let _e106 = col_sky;
+            let _e92 = p_66;
+            let _e93 = dir_sun;
+            let _e95 = shadow(_e92, _e93, 300f);
+            s_2 = _e95;
+            let _e97 = col_sun;
+            let _e98 = diffuse_sun;
+            let _e100 = s_2;
+            light_2 = ((_e97 * _e98) * _e100);
+            let _e103 = light_2;
+            let _e105 = col_sky;
             let _e107 = diffuse_sky;
             let _e109 = ao_1;
-            light_2 = (_e105 + ((_e106 * _e107) * _e109));
+            light_2 = (_e103 + (((0.2f * _e105) * _e107) * _e109));
             let _e112 = light_2;
-            let _e113 = col_ind;
-            let _e114 = diffuse_ind;
-            let _e116 = ao_1;
-            light_2 = (_e112 + ((_e113 * _e114) * _e116));
-            let _e119 = material_3;
-            let _e121 = light_2;
-            color = (_e119.albedo * _e121);
+            let _e114 = col_ind;
+            let _e116 = diffuse_ind;
+            let _e118 = ao_1;
+            light_2 = (_e112 + (((0.2f * _e114) * _e116) * _e118));
+            let _e121 = material_3;
+            let _e123 = light_2;
+            color = (_e121.albedo * _e123);
         }
     } else {
         {
-            let _e123 = u_2;
-            light_pos = (_e123.camera.pos + vec3<f32>(0f, 5f, 0f));
-            let _e137 = light_pos;
-            let _e138 = light_color;
-            lamp = Light(_e137, _e138, 500f);
-            let _e142 = p_66;
-            let _e143 = n_24;
-            let _e144 = v_7;
-            let _e145 = lamp;
-            let _e146 = material_3;
-            let _e147 = light_direct(_e142, _e143, _e144, _e145, _e146);
-            direct = _e147;
-            let _e149 = light_pos;
-            let _e150 = p_66;
-            l_3 = normalize((_e149 - _e150));
-            let _e154 = p_66;
-            let _e155 = l_3;
-            let _e156 = light_pos;
-            let _e157 = p_66;
-            let _e160 = shadow(_e154, _e155, length((_e156 - _e157)));
-            s_3 = _e160;
-            let _e162 = direct;
-            let _e163 = s_3;
-            direct = (_e162 * _e163);
-            let _e165 = p_66;
-            let _e166 = n_24;
-            let _e167 = ambient_occlusion(_e165, _e166);
-            ao_2 = _e167;
-            let _e171 = material_3;
-            let _e174 = ao_2;
-            ambient = ((vec3(0.0001f) * _e171.albedo) * _e174);
-            let _e177 = direct;
-            let _e178 = ambient;
-            color = (_e177 + _e178);
+            let _e125 = u_2;
+            light_pos = (_e125.camera.pos + vec3<f32>(0f, 5f, 0f));
+            let _e139 = light_pos;
+            let _e140 = light_color;
+            lamp = Light(_e139, _e140, 500f);
+            let _e144 = p_66;
+            let _e145 = n_24;
+            let _e146 = v_7;
+            let _e147 = lamp;
+            let _e148 = material_3;
+            let _e149 = light_direct(_e144, _e145, _e146, _e147, _e148);
+            direct = _e149;
+            let _e151 = light_pos;
+            let _e152 = p_66;
+            l_3 = normalize((_e151 - _e152));
+            let _e156 = p_66;
+            let _e157 = l_3;
+            let _e158 = light_pos;
+            let _e159 = p_66;
+            let _e162 = shadow(_e156, _e157, length((_e158 - _e159)));
+            s_3 = _e162;
+            let _e164 = direct;
+            let _e165 = s_3;
+            direct = (_e164 * _e165);
+            let _e167 = p_66;
+            let _e168 = n_24;
+            let _e169 = ambient_occlusion(_e167, _e168);
+            ao_2 = _e169;
+            let _e173 = material_3;
+            let _e176 = ao_2;
+            ambient = ((vec3(0.0001f) * _e173.albedo) * _e176);
+            let _e179 = direct;
+            let _e180 = ambient;
+            color = (_e179 + _e180);
         }
     }
-    let _e180 = color;
-    return _e180;
+    let _e182 = color;
+    return _e182;
 }
 
 fn get_material(id_4: f32, p_67: vec3<f32>, n_25: vec3<f32>, t_13: f32, trap: vec4<f32>) -> Material {
@@ -2243,8 +2224,8 @@ fn get_material(id_4: f32, p_67: vec3<f32>, n_25: vec3<f32>, t_13: f32, trap: ve
                     let _e158 = y_2;
                     let _e160 = amp_4;
                     let _e162 = p_68;
-                    let _e164 = noised_gradient(_e162.xz);
-                    h_14 = smoothstep((0.85f * _e153), (1f * _e156), (_e158 + ((0.13f * _e160) * _e164.x)));
+                    let _e165 = fbm(_e162.xz, 3i);
+                    h_14 = smoothstep((0.85f * _e153), (1f * _e156), (_e158 + ((0.13f * _e160) * _e165)));
                     let _e172 = h_14;
                     let _e177 = h_14;
                     let _e182 = n_26;
@@ -2254,7 +2235,7 @@ fn get_material(id_4: f32, p_67: vec3<f32>, n_25: vec3<f32>, t_13: f32, trap: ve
                     let _e193 = s_4;
                     color_2 = mix(_e191, _e192, vec3(_e193));
                     let _e196 = color_2;
-                    return Material(_e196, 0.5f, 0.2f);
+                    return Material(_e196, 0f, 0.2f);
                 }
             } else {
                 let _e200 = id_5;

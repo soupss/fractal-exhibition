@@ -301,7 +301,7 @@ vec3 terrain(vec2 p, int octaves) {
 
     mat2 m = mat2(1.0, 0.0, 0.0, 1.0);
     for (int i = 0; i < octaves; i++) {
-        vec3 n = noised_gradient(p);
+        vec3 n = noised_gradient(0.5*p);
 
         vec2 grad_octave = m * n.yz;
 
@@ -521,7 +521,7 @@ vec2 map_cloud(vec3 p) {
 
 float get_heightmap_amplitude(int world) {
     if (world == WORLD_SUB_WATER) return 3.0;
-    if (world == WORLD_SUB_MOUNTAIN) return 30.0;
+    if (world == WORLD_SUB_MOUNTAIN) return 60.0;
     else return -1.0;
 }
 
@@ -547,7 +547,7 @@ vec4 heightmap_mountain_octaves(vec2 p, int octaves) {
 }
 
 vec4 heightmap_mountain(vec2 p, float t, float t_max) {
-    int oct_max = 6;
+    int oct_max = 9;
     int oct_min = 2;
     int octaves = int(round(oct_min + (oct_max-oct_min)*(1.0 - smoothstep(t_max/2.0, t_max, t))));
     return heightmap_mountain_octaves(p, octaves);
@@ -677,7 +677,7 @@ vec2 raymarch(vec3 ro, vec3 rd) {
         float t = hit.x;
         float id = hit.y;
 
-        if (t > 0.0) { // NOTE: remove because of branch divergence?
+        if (t > 0.0) {
             t_res += t;
 
             if (id >= MATERIAL_PORTAL_BASE) {
@@ -779,7 +779,7 @@ vec3 normal_numerical(vec3 p, float t) {
     vec2 e = vec2(1.0, -1.0) * max(0.001, 0.001 * t);
     vec3 n;
     if (world_ray == WORLD_SUB_MOUNTAIN) {
-        int o = 9;
+        int o = 11;
         n = normalize(
                 e.xyy * (p.y + e.y - heightmap_mountain_octaves(p.xz + e.xy, o).x) +
                 e.yyx * (p.y + e.y - heightmap_mountain_octaves(p.xz + e.yx, o).x) +
@@ -843,31 +843,31 @@ float ambient_occlusion_sdf(vec3 p, vec3 n) {
 }
 
 //TODO: make this work
-float ambient_occlusion_terrain(vec3 p) { 
-    vec2 offsets[4] = { 
+float ambient_occlusion_terrain(vec3 p) {
+    vec2 offsets[4] = {
         vec2(1.0, 0.0),
         vec2(0.0, 1.0),
         vec2(-1.0, 0.0),
         vec2(0.0, -1.0),
     };
     float occlusion = 1.0;
-    for (int i = 0; i < 4; i++) { 
-        vec2 q = p.xz += 0.1*offsets[i];
+    for (int i = 0; i < 4; i++) {
+        vec2 q = p.xz + 0.1*offsets[i];
         float h = heightmap(p.xz, 0.0, 0.0).x;
         float dh = p.y - h;
-        occlusion -= 0.5*dh;
+        occlusion -= 0.5*max(-dh, 0.0);
     }
     return occlusion;
 }
 
 float ambient_occlusion(vec3 p, vec3 n) {
     float ao;
-    if (use_heightmap()) {
-        ao = ambient_occlusion_terrain(p);
-    }
-    else {
+    // if (use_heightmap()) {
+    //     ao = ambient_occlusion_terrain(p);
+    // }
+    // else {
         ao = ambient_occlusion_sdf(p, n);
-    }
+    // }
     return ao;
 }
 
@@ -960,14 +960,14 @@ vec3 lighting(vec3 p, vec3 n, vec3 v, Material material, float t) {
         float diffuse_sky = clamp(0.5 + 0.5*n.y, 0.0, 1.0);
         float diffuse_ind = clamp(dot(n, normalize(dir_sun*vec3(-1.0,0.0,-1.0))), 0.0, 1.0);
 
-        float ao = ambient_occlusion(p, n);
-        // float ao = 1.0;
-        float s = shadow(p, dir_sun, 50.0);
+        // float ao = ambient_occlusion(p, n);
+        float ao = 1.0;
+        float s = shadow(p, dir_sun, 300.0);
         // float s = 1.0;
 
         vec3 light = col_sun*diffuse_sun*s;
-        light += col_sky*diffuse_sky*ao;
-        light += col_ind*diffuse_ind*ao;
+        light += 0.2*col_sky*diffuse_sky*ao;
+        light += 0.2*col_ind*diffuse_ind*ao;
 
         color = material.albedo * light;
     }
@@ -1013,7 +1013,7 @@ Material get_material(float id, vec3 p, vec3 n, float t, vec4 trap) {
         vec3 grass = vec3(0.05, 0.05, 0.01);
         color = mix(color, grass*(r*0.75+0.25), smoothstep(0.95, 1.0, n.y));
 
-        float h = smoothstep(0.85*amp, 1.00*amp, y+0.13*amp*noised_gradient(p.xz).x);
+        float h = smoothstep(0.85*amp, 1.00*amp, y+0.13*amp*fbm(p.xz, 3));
         float s = smoothstep(1.0-0.5*h, 1.0-0.1*h, 0.25 + 0.75*n.y);
         vec3 snow = vec3(0.95);
         color = mix(color, snow, s);
@@ -1022,7 +1022,7 @@ Material get_material(float id, vec3 p, vec3 n, float t, vec4 trap) {
         // float fo = 1.0-exp(-pow(0.001*t, 2.0));
         // color = mix(color, fog, fo);
 
-        return Material(color, 0.5, 0.2);
+        return Material(color, 0.0, 0.2);
     }
     else if (id == MATERIAL_WATER ) return Material(vec3(0.0, 0.0, 1.0), 0.5, 0.5);
     else if (id == MATERIAL_CLOUD ) return Material(vec3(0.8, 0.8, 0.8), 0.5, 0.5);

@@ -10,6 +10,7 @@ layout(set = 0, binding = 1, std430) buffer state {
 
 #define MATERIAL_NULL 0.0
 #define MATERIAL_FRACTAL 1.0
+#define MATERIAL_FRACTAL_FLOOR 1.1
 #define MATERIAL_MOUNTAIN 2.0
 #define MATERIAL_WATER 3.0
 #define MATERIAL_CLOUD 4.0
@@ -313,7 +314,7 @@ vec3 terrain(vec2 p, int octaves) {
         p = rot*p*2.0;
         m = transpose(rot)*m;
     }
-    return vec3(h, grad_eroded)/2.0;
+    return vec3(h, grad_eroded);
 }
 
 // get portal to "world" position and normal
@@ -429,6 +430,8 @@ vec2 map_hub(vec3 p) {
     return vec2(1e8, MATERIAL_NULL);
 }
 
+vec4 g_trap = vec4(1e10);
+
 vec2 map_fractal(vec3 p) {
     mat2x3 portal = get_portal(WORLD_SUB_FRACTAL);
 
@@ -438,13 +441,13 @@ vec2 map_fractal(vec3 p) {
     vec3 right = normalize(cross(up, forward));
 
     vec3 q = vec3(dot(p, right), dot(p, up), dot(p, forward));
-    vec2 res = vec2(sd_plane(q, vec3(0.0, 1.0, 0.0)), MATERIAL_FRACTAL);
+    vec2 res = vec2(sd_plane(q, vec3(0.0, 1.0, 0.0)), MATERIAL_FRACTAL_FLOOR);
 
     q = q - vec3(0.0, 3.5 + 0.35*sin(0.8*u.t), -18.0);
 
     float s = 11.0;
     vec2 id = round(q.xy/s);
-    if (id.y > 0 && id.y < 10) {
+    if (id.y > 0 && id.y < 15) {
         q.xy = q.xy - s*round(id);
 
         q.xz *= rotate_2d(0.1 * u.t);
@@ -452,8 +455,8 @@ vec2 map_fractal(vec3 p) {
         q.xz *= rotate_2d(0.05 * -u.t);
 
         float d_bound = sd_sphere(q, 10.0);
-        if (d_bound > 1.0) {
-            res = u_op(res, vec2(d_bound, MATERIAL_FRACTAL));
+        if (d_bound > 2.0) {
+            res = u_op(res, vec2(d_bound, MATERIAL_NULL));
         }
         else {
             mat2 rot_xz = rotate_2d(0.2*u.t);
@@ -461,7 +464,6 @@ vec2 map_fractal(vec3 p) {
             float scale = 2.0;
             float scaled = 1.0;
 
-            // vec4 trap = vec4(1e10);
             for (int i = 0; i < id.y; i++) {
                 q = abs(q);
                 q -= vec3(1.0, 0.4, 0.7);
@@ -469,13 +471,12 @@ vec2 map_fractal(vec3 p) {
                 q.xy *= rot_xy;
                 q *= scale*0.8;
                 scaled *= scale;
-                // trap = min(trap, vec4(abs(q), length(q)));
+                g_trap = min(g_trap, vec4(abs(q), length(q)));
             }
 
             float d = sd_box(q, vec3(1.0, 1.2, 1.0));
             d /= scaled;
 
-            // vec3 color = palette(trap.z * 4.0, vec3(0.5), vec3(0.5), vec3(1.0), vec3(0.0, 0.1, 0.2));
             res = u_op(res, vec2(d, MATERIAL_FRACTAL));
         }
     }
@@ -520,15 +521,13 @@ vec2 map_cloud(vec3 p) {
 
 float get_heightmap_amplitude(int world) {
     if (world == WORLD_SUB_WATER) return 3.0;
-    if (world == WORLD_SUB_MOUNTAIN) return 60.0;
+    if (world == WORLD_SUB_MOUNTAIN) return 30.0;
     else return -1.0;
 }
 
 vec4 heightmap_water(vec2 p) {
-    float offset = 20.0;
-    p.y += offset;
     float amp = get_heightmap_amplitude(WORLD_SUB_WATER);
-    float h = amp*sin(0.3*p.x + u.t);
+    float h = -20.0 + amp*sin(0.3*p.x + u.t);
     return vec4(h, vec2(0.0), MATERIAL_WATER);
 }
 
@@ -540,7 +539,7 @@ vec4 heightmap_mountain_octaves(vec2 p, int octaves) {
 
     float amp = get_heightmap_amplitude(WORLD_SUB_MOUNTAIN);
     h *= amp;
-    h -= 0.5*amp;
+    h -= amp;
 
     vec2 grad = fbm.yz * freq * amp;
 
@@ -780,7 +779,7 @@ vec3 normal_numerical(vec3 p, float t) {
     vec2 e = vec2(1.0, -1.0) * max(0.001, 0.001 * t);
     vec3 n;
     if (world_ray == WORLD_SUB_MOUNTAIN) {
-        int o = 12;
+        int o = 9;
         n = normalize(
                 e.xyy * (p.y + e.y - heightmap_mountain_octaves(p.xz + e.xy, o).x) +
                 e.yyx * (p.y + e.y - heightmap_mountain_octaves(p.xz + e.yx, o).x) +
@@ -975,7 +974,7 @@ vec3 lighting(vec3 p, vec3 n, vec3 v, Material material, float t) {
     else {
         vec3 light_pos = u.camera.pos + vec3(0.0, 5.0, 0.0);
         vec3 light_color = vec3(1.0, 1.0, 1.0);
-        Light lamp = Light(light_pos, light_color, 1500.0);
+        Light lamp = Light(light_pos, light_color, 500.0);
         vec3 direct = light_direct(p, n, v, lamp, material);
 
         vec3 l = normalize(light_pos - p);
@@ -990,14 +989,19 @@ vec3 lighting(vec3 p, vec3 n, vec3 v, Material material, float t) {
     return color;
 }
 
-// TODO: use p, orbit traps, etc.
-Material get_material(float id, vec3 p, vec3 n, float t) {
-    if (id == MATERIAL_FRACTAL ) return Material(vec3(1.0, 0.0, 0.0), 0.5, 0.5);
+Material get_material(float id, vec3 p, vec3 n, float t, vec4 trap) {
+    if (id == MATERIAL_FRACTAL) {
+        vec3 color =palette(trap.z * 4.0, vec3(0.5), vec3(0.5), vec3(1.0), vec3(0.0, 0.1, 0.2));
+        return Material(color, 0.8, 0.2);
+    }
+    else if (id == MATERIAL_FRACTAL_FLOOR) {
+        return Material(vec3(0.6, 0.5, 0.4), 0.8, 0.2);
+    }
     else if (id == MATERIAL_MOUNTAIN ) {
 
         float amp = get_heightmap_amplitude(WORLD_SUB_MOUNTAIN);
         float r = noised_value(p.xz*0.01).x;
-        float y = p.y+0.5*amp;
+        float y = p.y+amp;
 
         vec3 rock1 = vec3(0.1, 0.09, 0.08);
         vec3 rock2 = vec3(0.05, 0.04, 0.03);
@@ -1009,7 +1013,7 @@ Material get_material(float id, vec3 p, vec3 n, float t) {
         vec3 grass = vec3(0.05, 0.05, 0.01);
         color = mix(color, grass*(r*0.75+0.25), smoothstep(0.95, 1.0, n.y));
 
-        float h = smoothstep(0.55*amp, 0.65*amp, y+0.13*amp*fbm(p.xz*0.5, 2));
+        float h = smoothstep(0.85*amp, 1.00*amp, y+0.13*amp*noised_gradient(p.xz).x);
         float s = smoothstep(1.0-0.5*h, 1.0-0.1*h, 0.25 + 0.75*n.y);
         vec3 snow = vec3(0.95);
         color = mix(color, snow, s);
@@ -1055,10 +1059,17 @@ void main() {
     vec3 color = vec3(0.0);
     if (t > 0.0) {
         vec3 p = ro + t*rd;
+
+        g_trap = vec4(1e10);
+        if (world_ray == WORLD_SUB_FRACTAL) {
+            map_fractal(p);
+        }
+        vec4 hit_trap = g_trap;
+
         vec3 n = normal(p, t);
         vec3 v = normalize(ro - p);
 
-        Material material = get_material(material_id, p, n, t);
+        Material material = get_material(material_id, p, n, t, hit_trap);
         vec3 light = lighting(p, n, v, material, t);
 
         color = light;

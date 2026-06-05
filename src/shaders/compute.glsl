@@ -674,17 +674,31 @@ vec3 raymarch_terrain(vec3 ro, vec3 rd) {
     }
 
     float steps = 0.0;
+
     for (int i = 0; i < 256; i ++) {
         steps++;
         vec3 p = ro + t*rd;
 
         vec4 hm = heightmap(p.xz, t, t_max);
         float h = hm.x;
+        vec2 grad = hm.yz;
         float id = hm.w;
 
         float dh = p.y - h;
-        if (abs(dh) < 0.001*t) {
-            return vec3(t, id, steps);
+        float dt = 0.65*dh/sqrt(1.0+dot(grad, grad));
+        // float dt = 0.65*dh;
+        // float dt = mix(dt1, dt2, step(sin(10.0*u.t),0.0));
+
+        float err = abs(dh / t);
+        if (err < err_candidate) {
+            err_candidate = err;
+            t_candidate = t;
+            id_candidate = id;
+        }
+
+        // if (abs(dh) < 0.001*t) {
+        if (err < pixel_radius) {
+            break;
         }
 
         float d_portal = sd_portal(p - portal[0], -1.0 * portal[1]);
@@ -692,13 +706,16 @@ vec3 raymarch_terrain(vec3 ro, vec3 rd) {
             return vec3(t, MATERIAL_PORTAL_BASE + float(WORLD_HUB), steps);
         }
 
-        float dt = 0.45*dh;
+
         dt = min(dt, d_portal);
 
         t += dt;
-        if (t > t_max) break;
+        if (t > t_max) {
+            t_candidate = -1;
+            break;
+        }
     }
-    return vec3(-1.0);
+    return vec3(t_candidate, id_candidate, steps);
 }
 
 vec3 raymarch(vec3 ro, vec3 rd) {

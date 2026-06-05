@@ -442,7 +442,7 @@ vec2 map_fractal(vec3 p) {
     vec3 right = normalize(cross(up, forward));
 
     vec3 q = vec3(dot(p, right), dot(p, up), dot(p, forward));
-    vec2 res = vec2(sd_plane(q, vec3(0.0, 1.0, 0.0)), MATERIAL_FRACTAL_FLOOR);
+    vec2 res = vec2(sd_plane(q + vec3(0.0, 4.0, 0.0), vec3(0.0, 1.0, 0.0)), MATERIAL_FRACTAL_FLOOR);
 
     q = q - vec3(0.0, 3.5 + 0.35*sin(0.8*u.t), -18.0);
 
@@ -707,7 +707,7 @@ vec3 raymarch(vec3 ro, vec3 rd) {
 
                 vec3 n = get_portal(world_ray)[1];
                 float a = max(abs(dot(n, rd)), 1e-6);
-                t_res += 0.1 / a;
+                t_res += 0.5 / a;
                 continue;
             }
 

@@ -907,121 +907,121 @@ fn map_fractal(p_30: vec3<f32>) -> vec2<f32> {
     let _e43 = forward;
     q_1 = vec3<f32>(dot(_e36, _e37), dot(_e39, _e40), dot(_e42, _e43));
     let _e47 = q_1;
-    let _e52 = sd_plane(_e47, vec3<f32>(0f, 1f, 0f));
-    res_1 = vec2<f32>(_e52, 1.1f);
-    let _e56 = q_1;
-    let _e61 = u_2;
-    q_1 = (_e56 - vec3<f32>(0f, (3.5f + (0.35f * sin((0.8f * _e61.t)))), -18f));
-    let _e73 = q_1;
-    let _e75 = s_1;
-    id = round((_e73.xy / vec2(_e75)));
-    let _e80 = id;
+    let _e57 = sd_plane((_e47 + vec3<f32>(0f, 4f, 0f)), vec3<f32>(0f, 1f, 0f));
+    res_1 = vec2<f32>(_e57, 1.1f);
+    let _e61 = q_1;
+    let _e66 = u_2;
+    q_1 = (_e61 - vec3<f32>(0f, (3.5f + (0.35f * sin((0.8f * _e66.t)))), -18f));
+    let _e78 = q_1;
+    let _e80 = s_1;
+    id = round((_e78.xy / vec2(_e80)));
     let _e85 = id;
-    if ((_e80.y > 0f) && (_e85.y < 15f)) {
+    let _e90 = id;
+    if ((_e85.y > 0f) && (_e90.y < 15f)) {
         {
-            let _e91 = q_1;
-            let _e93 = q_1;
-            let _e95 = s_1;
-            let _e96 = id;
-            let _e99 = (_e93.xy - (_e95 * round(_e96)));
-            q_1.x = _e99.x;
-            q_1.y = _e99.y;
-            let _e104 = q_1;
-            let _e106 = q_1;
-            let _e109 = u_2;
-            let _e112 = rotate_2d((0.1f * _e109.t));
-            let _e113 = (_e106.xz * _e112);
-            q_1.x = _e113.x;
-            q_1.z = _e113.y;
-            let _e118 = q_1;
-            let _e120 = q_1;
-            let _e123 = u_2;
-            let _e126 = rotate_2d((0.05f * _e123.t));
-            let _e127 = (_e120.yz * _e126);
-            q_1.y = _e127.x;
-            q_1.z = _e127.y;
-            let _e132 = q_1;
-            let _e134 = q_1;
-            let _e137 = u_2;
-            let _e141 = rotate_2d((0.05f * -(_e137.t)));
-            let _e142 = (_e134.xz * _e141);
-            q_1.x = _e142.x;
-            q_1.z = _e142.y;
-            let _e147 = q_1;
-            let _e149 = sd_sphere(_e147, 10f);
-            d_bound = _e149;
-            let _e151 = d_bound;
-            if (_e151 > 2f) {
+            let _e96 = q_1;
+            let _e98 = q_1;
+            let _e100 = s_1;
+            let _e101 = id;
+            let _e104 = (_e98.xy - (_e100 * round(_e101)));
+            q_1.x = _e104.x;
+            q_1.y = _e104.y;
+            let _e109 = q_1;
+            let _e111 = q_1;
+            let _e114 = u_2;
+            let _e117 = rotate_2d((0.1f * _e114.t));
+            let _e118 = (_e111.xz * _e117);
+            q_1.x = _e118.x;
+            q_1.z = _e118.y;
+            let _e123 = q_1;
+            let _e125 = q_1;
+            let _e128 = u_2;
+            let _e131 = rotate_2d((0.05f * _e128.t));
+            let _e132 = (_e125.yz * _e131);
+            q_1.y = _e132.x;
+            q_1.z = _e132.y;
+            let _e137 = q_1;
+            let _e139 = q_1;
+            let _e142 = u_2;
+            let _e146 = rotate_2d((0.05f * -(_e142.t)));
+            let _e147 = (_e139.xz * _e146);
+            q_1.x = _e147.x;
+            q_1.z = _e147.y;
+            let _e152 = q_1;
+            let _e154 = sd_sphere(_e152, 10f);
+            d_bound = _e154;
+            let _e156 = d_bound;
+            if (_e156 > 2f) {
                 {
-                    let _e154 = res_1;
-                    let _e155 = d_bound;
-                    let _e158 = u_op(_e154, vec2<f32>(_e155, 0f));
-                    res_1 = _e158;
+                    let _e159 = res_1;
+                    let _e160 = d_bound;
+                    let _e163 = u_op(_e159, vec2<f32>(_e160, 0f));
+                    res_1 = _e163;
                 }
             } else {
                 {
-                    let _e160 = u_2;
-                    let _e163 = rotate_2d((0.2f * _e160.t));
-                    rot_xz = _e163;
-                    let _e166 = u_2;
-                    let _e169 = rotate_2d((0.15f * _e166.t));
-                    rot_xy = _e169;
+                    let _e165 = u_2;
+                    let _e168 = rotate_2d((0.2f * _e165.t));
+                    rot_xz = _e168;
+                    let _e171 = u_2;
+                    let _e174 = rotate_2d((0.15f * _e171.t));
+                    rot_xy = _e174;
                     loop {
-                        let _e177 = i_5;
-                        let _e178 = id;
-                        if !((f32(_e177) < _e178.y)) {
+                        let _e182 = i_5;
+                        let _e183 = id;
+                        if !((f32(_e182) < _e183.y)) {
                             break;
                         }
                         {
-                            let _e186 = q_1;
-                            q_1 = abs(_e186);
-                            let _e188 = q_1;
-                            q_1 = (_e188 - vec3<f32>(1f, 0.4f, 0.7f));
-                            let _e194 = q_1;
-                            let _e196 = q_1;
-                            let _e198 = rot_xz;
-                            let _e199 = (_e196.xz * _e198);
-                            q_1.x = _e199.x;
-                            q_1.z = _e199.y;
-                            let _e204 = q_1;
-                            let _e206 = q_1;
-                            let _e208 = rot_xy;
-                            let _e209 = (_e206.xy * _e208);
-                            q_1.x = _e209.x;
-                            q_1.y = _e209.y;
-                            let _e214 = q_1;
-                            let _e215 = scale;
-                            q_1 = (_e214 * (_e215 * 0.8f));
-                            let _e219 = scaled;
+                            let _e191 = q_1;
+                            q_1 = abs(_e191);
+                            let _e193 = q_1;
+                            q_1 = (_e193 - vec3<f32>(1f, 0.4f, 0.7f));
+                            let _e199 = q_1;
+                            let _e201 = q_1;
+                            let _e203 = rot_xz;
+                            let _e204 = (_e201.xz * _e203);
+                            q_1.x = _e204.x;
+                            q_1.z = _e204.y;
+                            let _e209 = q_1;
+                            let _e211 = q_1;
+                            let _e213 = rot_xy;
+                            let _e214 = (_e211.xy * _e213);
+                            q_1.x = _e214.x;
+                            q_1.y = _e214.y;
+                            let _e219 = q_1;
                             let _e220 = scale;
-                            scaled = (_e219 * _e220);
-                            let _e222 = g_trap;
-                            let _e223 = q_1;
-                            let _e224 = abs(_e223);
-                            let _e225 = q_1;
-                            g_trap = min(_e222, vec4<f32>(_e224.x, _e224.y, _e224.z, length(_e225)));
+                            q_1 = (_e219 * (_e220 * 0.8f));
+                            let _e224 = scaled;
+                            let _e225 = scale;
+                            scaled = (_e224 * _e225);
+                            let _e227 = g_trap;
+                            let _e228 = q_1;
+                            let _e229 = abs(_e228);
+                            let _e230 = q_1;
+                            g_trap = min(_e227, vec4<f32>(_e229.x, _e229.y, _e229.z, length(_e230)));
                         }
                         continuing {
-                            let _e183 = i_5;
-                            i_5 = (_e183 + 1i);
+                            let _e188 = i_5;
+                            i_5 = (_e188 + 1i);
                         }
                     }
-                    let _e232 = q_1;
-                    let _e237 = sd_box(_e232, vec3<f32>(1f, 1.2f, 1f));
-                    d_3 = _e237;
-                    let _e239 = d_3;
-                    let _e240 = scaled;
-                    d_3 = (_e239 / _e240);
-                    let _e242 = res_1;
-                    let _e243 = d_3;
-                    let _e246 = u_op(_e242, vec2<f32>(_e243, 1f));
-                    res_1 = _e246;
+                    let _e237 = q_1;
+                    let _e242 = sd_box(_e237, vec3<f32>(1f, 1.2f, 1f));
+                    d_3 = _e242;
+                    let _e244 = d_3;
+                    let _e245 = scaled;
+                    d_3 = (_e244 / _e245);
+                    let _e247 = res_1;
+                    let _e248 = d_3;
+                    let _e251 = u_op(_e247, vec2<f32>(_e248, 1f));
+                    res_1 = _e251;
                 }
             }
         }
     }
-    let _e247 = res_1;
-    return _e247;
+    let _e252 = res_1;
+    return _e252;
 }
 
 fn map_lavalamp(p_32: vec3<f32>) -> vec2<f32> {
@@ -1335,74 +1335,102 @@ fn raymarch_sdf(ro: vec3<f32>, rd: vec3<f32>, t_global: f32) -> vec3<f32> {
     var t_candidate: f32 = 0.001f;
     var err_candidate: f32 = 100000000f;
     var id_candidate: f32 = 0f;
-    var t_max_4: f32 = 100f;
+    var t_4: f32 = 0.001f;
+    var omega: f32 = 1.2f;
+    var r_prev: f32 = 0f;
+    var t_max_4: f32 = 400f;
     var pixel_radius: f32;
     var steps: f32 = 0f;
     var i_7: i32 = 0i;
     var p_48: vec3<f32>;
     var hit: vec2<f32>;
-    var t_4: f32;
+    var r_4: f32;
     var id_1: f32;
+    var overstep: bool;
     var err: f32;
 
     ro_1 = ro;
     rd_1 = rd;
     t_global_1 = t_global;
-    let _e34 = u_2;
-    pixel_radius = (1f / _e34.resolution.y);
+    let _e40 = u_2;
+    pixel_radius = (1f / _e40.resolution.y);
     loop {
-        let _e43 = i_7;
-        if !((_e43 < 256i)) {
+        let _e49 = i_7;
+        if !((_e49 < 256i)) {
             break;
         }
         {
-            let _e50 = steps;
-            steps = (_e50 + 1f);
-            let _e53 = ro_1;
-            let _e54 = t_tot;
-            let _e55 = rd_1;
-            p_48 = (_e53 + (_e54 * _e55));
-            let _e59 = p_48;
-            let _e60 = map(_e59);
-            hit = _e60;
-            let _e62 = hit;
-            let _e63 = p_48;
-            let _e64 = map_portals(_e63);
-            let _e65 = u_op(_e62, _e64);
-            hit = _e65;
-            let _e66 = hit;
-            t_4 = _e66.x;
-            let _e69 = hit;
-            id_1 = _e69.y;
-            let _e72 = t_4;
-            let _e73 = t_global_1;
-            let _e74 = t_tot;
-            err = (_e72 / (_e73 + _e74));
-            let _e78 = err;
-            let _e79 = err_candidate;
-            if (_e78 < _e79) {
+            let _e56 = steps;
+            steps = (_e56 + 1f);
+            let _e59 = ro_1;
+            let _e60 = t_tot;
+            let _e61 = rd_1;
+            p_48 = (_e59 + (_e60 * _e61));
+            let _e65 = p_48;
+            let _e66 = map(_e65);
+            hit = _e66;
+            let _e68 = hit;
+            let _e69 = p_48;
+            let _e70 = map_portals(_e69);
+            let _e71 = u_op(_e68, _e70);
+            hit = _e71;
+            let _e72 = hit;
+            r_4 = _e72.x;
+            let _e75 = hit;
+            id_1 = _e75.y;
+            let _e78 = omega;
+            let _e81 = r_4;
+            let _e82 = r_prev;
+            let _e84 = t_4;
+            overstep = ((_e78 > 1f) && ((_e81 + _e82) < _e84));
+            let _e88 = overstep;
+            if _e88 {
                 {
-                    let _e81 = err;
-                    err_candidate = _e81;
-                    let _e82 = t_tot;
-                    t_candidate = _e82;
-                    let _e83 = id_1;
-                    id_candidate = _e83;
+                    let _e89 = t_4;
+                    let _e90 = r_prev;
+                    t_4 = -((_e89 - _e90));
+                    omega = 1f;
+                }
+            } else {
+                {
+                    let _e94 = omega;
+                    let _e95 = r_4;
+                    t_4 = (_e94 * _e95);
                 }
             }
-            let _e84 = err;
-            let _e86 = pixel_radius;
-            if (_e84 < (1f * _e86)) {
+            let _e97 = r_4;
+            r_prev = _e97;
+            let _e98 = r_4;
+            let _e99 = t_global_1;
+            let _e100 = t_tot;
+            err = abs((_e98 / (_e99 + _e100)));
+            let _e105 = overstep;
+            let _e107 = err;
+            let _e108 = err_candidate;
+            if (!(_e105) && (_e107 < _e108)) {
+                {
+                    let _e111 = err;
+                    err_candidate = _e111;
+                    let _e112 = t_tot;
+                    t_candidate = _e112;
+                    let _e113 = id_1;
+                    id_candidate = _e113;
+                }
+            }
+            let _e114 = overstep;
+            let _e116 = err;
+            let _e117 = pixel_radius;
+            if (!(_e114) && (_e116 < _e117)) {
                 {
                     break;
                 }
             }
-            let _e89 = t_tot;
-            let _e90 = t_4;
-            t_tot = (_e89 + _e90);
-            let _e92 = t_tot;
-            let _e93 = t_max_4;
-            if (_e92 > _e93) {
+            let _e120 = t_tot;
+            let _e121 = t_4;
+            t_tot = (_e120 + _e121);
+            let _e123 = t_tot;
+            let _e124 = t_max_4;
+            if (_e123 > _e124) {
                 {
                     t_candidate = -1f;
                     break;
@@ -1410,21 +1438,30 @@ fn raymarch_sdf(ro: vec3<f32>, rd: vec3<f32>, t_global: f32) -> vec3<f32> {
             }
         }
         continuing {
-            let _e47 = i_7;
-            i_7 = (_e47 + 1i);
+            let _e53 = i_7;
+            i_7 = (_e53 + 1i);
         }
     }
-    let _e97 = t_candidate;
-    let _e98 = id_candidate;
-    let _e99 = steps;
-    return vec3<f32>(_e97, _e98, _e99);
+    let _e128 = err_candidate;
+    let _e129 = pixel_radius;
+    if (_e128 > (_e129 * 1.5f)) {
+        t_candidate = -1f;
+    }
+    let _e135 = t_candidate;
+    let _e136 = id_candidate;
+    let _e137 = steps;
+    return vec3<f32>(_e135, _e136, _e137);
 }
 
 fn raymarch_terrain(ro_2: vec3<f32>, rd_2: vec3<f32>) -> vec3<f32> {
     var ro_3: vec3<f32>;
     var rd_3: vec3<f32>;
     var t_5: f32 = 0.01f;
+    var t_candidate_1: f32 = 0.01f;
+    var id_candidate_1: f32 = 0.01f;
+    var err_candidate_1: f32 = 100000000f;
     var t_max_5: f32 = 1600f;
+    var pixel_radius_1: f32;
     var h_max: f32;
     var rd_is_up: bool;
     var portal_4: mat2x3<f32>;
@@ -1434,110 +1471,136 @@ fn raymarch_terrain(ro_2: vec3<f32>, rd_2: vec3<f32>) -> vec3<f32> {
     var p_49: vec3<f32>;
     var hm: vec4<f32>;
     var h_5: f32;
+    var grad_4: vec2<f32>;
     var id_2: f32;
     var dh: f32;
-    var d_portal: f32;
     var dt: f32;
+    var err_1: f32;
+    var d_portal: f32;
 
     ro_3 = ro_2;
     rd_3 = rd_2;
-    let _e25 = world_ray;
-    let _e26 = get_heightmap_amplitude(_e25);
-    h_max = _e26;
-    let _e28 = rd_3;
-    rd_is_up = (_e28.y > 0f);
-    let _e33 = world_ray;
-    let _e34 = get_portal(_e33);
-    portal_4 = _e34;
-    let _e38 = portal_4[0];
-    h_portal = (_e38.y + 7.4f);
-    let _e43 = h_max;
-    let _e44 = h_portal;
-    h_max = max(_e43, _e44);
-    let _e46 = ro_3;
-    let _e48 = h_max;
-    let _e50 = rd_is_up;
-    if ((_e46.y > _e48) && _e50) {
+    let _e32 = u_2;
+    pixel_radius_1 = (1f / _e32.resolution.y);
+    let _e37 = world_ray;
+    let _e38 = get_heightmap_amplitude(_e37);
+    h_max = _e38;
+    let _e40 = rd_3;
+    rd_is_up = (_e40.y > 0f);
+    let _e45 = world_ray;
+    let _e46 = get_portal(_e45);
+    portal_4 = _e46;
+    let _e50 = portal_4[0];
+    h_portal = (_e50.y + 7.4f);
+    let _e55 = h_max;
+    let _e56 = h_portal;
+    h_max = max(_e55, _e56);
+    let _e58 = ro_3;
+    let _e60 = h_max;
+    let _e62 = rd_is_up;
+    if ((_e58.y > _e60) && _e62) {
         return vec3(-1f);
     }
-    let _e55 = ro_3;
-    let _e57 = h_max;
-    if (_e55.y > _e57) {
+    let _e67 = ro_3;
+    let _e69 = h_max;
+    if (_e67.y > _e69) {
         {
-            let _e59 = t_5;
-            let _e60 = h_max;
-            let _e61 = ro_3;
-            let _e64 = rd_3;
-            t_5 = max(_e59, ((_e60 - _e61.y) / _e64.y));
+            let _e71 = t_5;
+            let _e72 = h_max;
+            let _e73 = ro_3;
+            let _e76 = rd_3;
+            t_5 = max(_e71, ((_e72 - _e73.y) / _e76.y));
         }
     }
     loop {
-        let _e72 = i_8;
-        if !((_e72 < 256i)) {
+        let _e84 = i_8;
+        if !((_e84 < 256i)) {
             break;
         }
         {
-            let _e79 = steps_1;
-            steps_1 = (_e79 + 1f);
-            let _e82 = ro_3;
-            let _e83 = t_5;
-            let _e84 = rd_3;
-            p_49 = (_e82 + (_e83 * _e84));
-            let _e88 = p_49;
-            let _e90 = t_5;
-            let _e91 = t_max_5;
-            let _e92 = heightmap(_e88.xz, _e90, _e91);
-            hm = _e92;
-            let _e94 = hm;
-            h_5 = _e94.x;
-            let _e97 = hm;
-            id_2 = _e97.w;
+            let _e91 = steps_1;
+            steps_1 = (_e91 + 1f);
+            let _e94 = ro_3;
+            let _e95 = t_5;
+            let _e96 = rd_3;
+            p_49 = (_e94 + (_e95 * _e96));
             let _e100 = p_49;
-            let _e102 = h_5;
-            dh = (_e100.y - _e102);
-            let _e105 = dh;
-            let _e108 = t_5;
-            if (abs(_e105) < (0.001f * _e108)) {
-                {
-                    let _e111 = t_5;
-                    let _e112 = id_2;
-                    let _e113 = steps_1;
-                    return vec3<f32>(_e111, _e112, _e113);
-                }
-            }
+            let _e102 = t_5;
+            let _e103 = t_max_5;
+            let _e104 = heightmap(_e100.xz, _e102, _e103);
+            hm = _e104;
+            let _e106 = hm;
+            h_5 = _e106.x;
+            let _e109 = hm;
+            grad_4 = _e109.yz;
+            let _e112 = hm;
+            id_2 = _e112.w;
             let _e115 = p_49;
-            let _e118 = portal_4[0];
-            let _e124 = portal_4[1];
-            let _e126 = sd_portal((_e115 - _e118), (-1f * _e124));
-            d_portal = _e126;
-            let _e128 = d_portal;
-            if (_e128 < 0.001f) {
+            let _e117 = h_5;
+            dh = (_e115.y - _e117);
+            let _e121 = dh;
+            let _e124 = grad_4;
+            let _e125 = grad_4;
+            dt = ((0.65f * _e121) / sqrt((1f + dot(_e124, _e125))));
+            let _e131 = dh;
+            let _e132 = t_5;
+            err_1 = abs((_e131 / _e132));
+            let _e136 = err_1;
+            let _e137 = err_candidate_1;
+            if (_e136 < _e137) {
                 {
-                    let _e131 = t_5;
-                    let _e136 = steps_1;
-                    return vec3<f32>(_e131, 100f, _e136);
+                    let _e139 = err_1;
+                    err_candidate_1 = _e139;
+                    let _e140 = t_5;
+                    t_candidate_1 = _e140;
+                    let _e141 = id_2;
+                    id_candidate_1 = _e141;
                 }
             }
-            let _e139 = dh;
-            dt = (0.45f * _e139);
-            let _e142 = dt;
-            let _e143 = d_portal;
-            dt = min(_e142, _e143);
-            let _e145 = t_5;
-            let _e146 = dt;
-            t_5 = (_e145 + _e146);
-            let _e148 = t_5;
-            let _e149 = t_max_5;
-            if (_e148 > _e149) {
-                break;
+            let _e142 = err_1;
+            let _e143 = pixel_radius_1;
+            if (_e142 < _e143) {
+                {
+                    break;
+                }
+            }
+            let _e145 = p_49;
+            let _e148 = portal_4[0];
+            let _e154 = portal_4[1];
+            let _e156 = sd_portal((_e145 - _e148), (-1f * _e154));
+            d_portal = _e156;
+            let _e158 = d_portal;
+            if (_e158 < 0.001f) {
+                {
+                    let _e161 = t_5;
+                    let _e166 = steps_1;
+                    return vec3<f32>(_e161, 100f, _e166);
+                }
+            }
+            let _e168 = dt;
+            let _e169 = d_portal;
+            dt = min(_e168, _e169);
+            let _e171 = t_5;
+            let _e172 = dt;
+            t_5 = (_e171 + _e172);
+            let _e174 = t_5;
+            let _e175 = t_max_5;
+            if (_e174 > _e175) {
+                {
+                    t_candidate_1 = -1f;
+                    break;
+                }
             }
         }
         continuing {
-            let _e76 = i_8;
-            i_8 = (_e76 + 1i);
+            let _e88 = i_8;
+            i_8 = (_e88 + 1i);
         }
     }
-    return vec3(-1f);
+    let _e180 = t_candidate_1;
+    let _e181 = id_candidate_1;
+    let _e182 = steps_1;
+    return vec3<f32>(_e180, _e181, _e182);
 }
 
 fn raymarch(ro_4: vec3<f32>, rd_4: vec3<f32>) -> vec3<f32> {
@@ -1549,7 +1612,6 @@ fn raymarch(ro_4: vec3<f32>, rd_4: vec3<f32>) -> vec3<f32> {
     var hit_1: vec3<f32>;
     var t_6: f32;
     var id_3: f32;
-    var steps_3: f32;
     var n_7: vec3<f32>;
     var a_9: f32;
 
@@ -1583,34 +1645,34 @@ fn raymarch(ro_4: vec3<f32>, rd_4: vec3<f32>) -> vec3<f32> {
             let _e48 = hit_1;
             id_3 = _e48.y;
             let _e51 = hit_1;
-            steps_3 = _e51.z;
-            let _e54 = t_6;
-            if (_e54 > 0f) {
+            steps_2 = _e51.z;
+            let _e53 = t_6;
+            if (_e53 > 0f) {
                 {
-                    let _e57 = t_res;
-                    let _e58 = t_6;
-                    t_res = (_e57 + _e58);
-                    let _e60 = id_3;
-                    if (_e60 >= 100f) {
+                    let _e56 = t_res;
+                    let _e57 = t_6;
+                    t_res = (_e56 + _e57);
+                    let _e59 = id_3;
+                    if (_e59 >= 100f) {
                         {
-                            let _e63 = id_3;
-                            world_ray = i32((_e63 - 100f));
-                            let _e68 = world_ray;
-                            let _e69 = get_portal(_e68);
-                            n_7 = _e69[1];
-                            let _e72 = n_7;
-                            let _e73 = rd_5;
-                            a_9 = max(abs(dot(_e72, _e73)), 0.000001f);
-                            let _e79 = t_res;
-                            let _e81 = a_9;
-                            t_res = (_e79 + (0.1f / _e81));
+                            let _e62 = id_3;
+                            world_ray = i32((_e62 - 100f));
+                            let _e67 = world_ray;
+                            let _e68 = get_portal(_e67);
+                            n_7 = _e68[1];
+                            let _e71 = n_7;
+                            let _e72 = rd_5;
+                            a_9 = max(abs(dot(_e71, _e72)), 0.000001f);
+                            let _e78 = t_res;
+                            let _e80 = a_9;
+                            t_res = (_e78 + (0.5f / _e80));
                             continue;
                         }
                     }
-                    let _e84 = t_res;
-                    let _e85 = id_3;
-                    let _e86 = steps_3;
-                    return vec3<f32>(_e84, _e85, _e86);
+                    let _e83 = t_res;
+                    let _e84 = id_3;
+                    let _e85 = steps_2;
+                    return vec3<f32>(_e83, _e84, _e85);
                 }
             } else {
                 break;
@@ -1691,15 +1753,15 @@ fn normal_numerical(p_50: vec3<f32>, t_7: f32) -> vec3<f32> {
 
 fn normal_analytical(p_52: vec2<f32>) -> vec3<f32> {
     var p_53: vec2<f32>;
-    var grad_4: vec2<f32>;
+    var grad_5: vec2<f32>;
     var n_9: vec3<f32>;
 
     p_53 = p_52;
     let _e19 = p_53;
     let _e21 = heightmap_mountain_octaves(_e19, 12i);
-    grad_4 = _e21.yz;
-    let _e24 = grad_4;
-    let _e28 = grad_4;
+    grad_5 = _e21.yz;
+    let _e24 = grad_5;
+    let _e28 = grad_5;
     n_9 = normalize(vec3<f32>(-(_e24.x), 1f, -(_e28.y)));
     let _e34 = n_9;
     return _e34;
@@ -1740,7 +1802,7 @@ fn shadow(ro_6: vec3<f32>, rd_6: vec3<f32>, d_max: f32) -> f32 {
         let _e29 = i_9;
         let _e32 = d_7;
         let _e33 = d_max_1;
-        if !(((_e29 < 128i) && (_e32 < _e33))) {
+        if !(((_e29 < 256i) && (_e32 < _e33))) {
             break;
         }
         {
@@ -1939,7 +2001,7 @@ fn g1_(n_17: vec3<f32>, dir: vec3<f32>, roughness_2: f32) -> f32 {
     var n_18: vec3<f32>;
     var dir_1: vec3<f32>;
     var roughness_3: f32;
-    var r_4: f32;
+    var r_5: f32;
     var k_6: f32;
     var cos_theta_1: f32;
     var num_1: f32;
@@ -1949,9 +2011,9 @@ fn g1_(n_17: vec3<f32>, dir: vec3<f32>, roughness_2: f32) -> f32 {
     dir_1 = dir;
     roughness_3 = roughness_2;
     let _e23 = roughness_3;
-    r_4 = (_e23 + 1f);
-    let _e27 = r_4;
-    let _e28 = r_4;
+    r_5 = (_e23 + 1f);
+    let _e27 = r_5;
+    let _e28 = r_5;
     k_6 = ((_e27 * _e28) / 8f);
     let _e33 = n_18;
     let _e34 = dir_1;
@@ -2102,6 +2164,7 @@ fn lighting(p_65: vec3<f32>, n_23: vec3<f32>, v_6: vec3<f32>, material_2: Materi
     var diffuse_sky: f32;
     var diffuse_ind: f32;
     var ao_1: f32 = 1f;
+    var ro_s: vec3<f32>;
     var s_2: f32;
     var light_2: vec3<f32>;
     var light_pos: vec3<f32>;
@@ -2130,67 +2193,70 @@ fn lighting(p_65: vec3<f32>, n_23: vec3<f32>, v_6: vec3<f32>, material_2: Materi
             let _e76 = dir_sun;
             diffuse_ind = clamp(dot(_e75, normalize((_e76 * vec3<f32>(-1f, 0f, -1f)))), 0f, 1f);
             let _e92 = p_66;
-            let _e93 = dir_sun;
-            let _e95 = shadow(_e92, _e93, 300f);
-            s_2 = _e95;
-            let _e97 = col_sun;
-            let _e98 = diffuse_sun;
-            let _e100 = s_2;
-            light_2 = ((_e97 * _e98) * _e100);
-            let _e103 = light_2;
-            let _e105 = col_sky;
-            let _e107 = diffuse_sky;
-            let _e109 = ao_1;
-            light_2 = (_e103 + (((0.2f * _e105) * _e107) * _e109));
-            let _e112 = light_2;
-            let _e114 = col_ind;
-            let _e116 = diffuse_ind;
-            let _e118 = ao_1;
-            light_2 = (_e112 + (((0.2f * _e114) * _e116) * _e118));
-            let _e121 = material_3;
-            let _e123 = light_2;
-            color = (_e121.albedo * _e123);
+            let _e94 = n_24;
+            ro_s = (_e92 + (0.15f * _e94));
+            let _e98 = ro_s;
+            let _e99 = dir_sun;
+            let _e101 = shadow(_e98, _e99, 300f);
+            s_2 = _e101;
+            let _e103 = col_sun;
+            let _e104 = diffuse_sun;
+            let _e106 = s_2;
+            light_2 = ((_e103 * _e104) * _e106);
+            let _e109 = light_2;
+            let _e111 = col_sky;
+            let _e113 = diffuse_sky;
+            let _e115 = ao_1;
+            light_2 = (_e109 + (((0.2f * _e111) * _e113) * _e115));
+            let _e118 = light_2;
+            let _e120 = col_ind;
+            let _e122 = diffuse_ind;
+            let _e124 = ao_1;
+            light_2 = (_e118 + (((0.2f * _e120) * _e122) * _e124));
+            let _e127 = material_3;
+            let _e129 = light_2;
+            color = (_e127.albedo * _e129);
         }
     } else {
         {
-            let _e125 = u_2;
-            light_pos = (_e125.camera.pos + vec3<f32>(0f, 5f, 0f));
-            let _e139 = light_pos;
-            let _e140 = light_color;
-            lamp = Light(_e139, _e140, 500f);
-            let _e144 = p_66;
-            let _e145 = n_24;
-            let _e146 = v_7;
-            let _e147 = lamp;
-            let _e148 = material_3;
-            let _e149 = light_direct(_e144, _e145, _e146, _e147, _e148);
-            direct = _e149;
-            let _e151 = light_pos;
-            let _e152 = p_66;
-            l_3 = normalize((_e151 - _e152));
-            let _e156 = p_66;
-            let _e157 = l_3;
-            let _e158 = light_pos;
-            let _e159 = p_66;
-            let _e162 = shadow(_e156, _e157, length((_e158 - _e159)));
-            s_3 = _e162;
-            let _e164 = direct;
-            let _e165 = s_3;
-            direct = (_e164 * _e165);
-            let _e167 = p_66;
-            let _e168 = n_24;
-            let _e169 = ambient_occlusion(_e167, _e168);
-            ao_2 = _e169;
-            let _e173 = material_3;
-            let _e176 = ao_2;
-            ambient = ((vec3(0.0001f) * _e173.albedo) * _e176);
-            let _e179 = direct;
-            let _e180 = ambient;
-            color = (_e179 + _e180);
+            let _e131 = u_2;
+            light_pos = (_e131.camera.pos + vec3<f32>(0f, 2f, 0f));
+            let _e145 = light_pos;
+            let _e146 = light_color;
+            lamp = Light(_e145, _e146, 500f);
+            let _e150 = p_66;
+            let _e151 = n_24;
+            let _e152 = v_7;
+            let _e153 = lamp;
+            let _e154 = material_3;
+            let _e155 = light_direct(_e150, _e151, _e152, _e153, _e154);
+            direct = _e155;
+            let _e157 = light_pos;
+            let _e158 = p_66;
+            l_3 = normalize((_e157 - _e158));
+            let _e162 = p_66;
+            let _e163 = l_3;
+            let _e164 = light_pos;
+            let _e165 = p_66;
+            let _e168 = shadow(_e162, _e163, length((_e164 - _e165)));
+            s_3 = _e168;
+            let _e170 = direct;
+            let _e171 = s_3;
+            direct = (_e170 * _e171);
+            let _e173 = p_66;
+            let _e174 = n_24;
+            let _e175 = ambient_occlusion(_e173, _e174);
+            ao_2 = _e175;
+            let _e179 = material_3;
+            let _e182 = ao_2;
+            ambient = ((vec3(0.0001f) * _e179.albedo) * _e182);
+            let _e185 = direct;
+            let _e186 = ambient;
+            color = (_e185 + _e186);
         }
     }
-    let _e182 = color;
-    return _e182;
+    let _e188 = color;
+    return _e188;
 }
 
 fn get_material(id_4: f32, p_67: vec3<f32>, n_25: vec3<f32>, t_13: f32, trap: vec4<f32>) -> Material {
@@ -2201,7 +2267,7 @@ fn get_material(id_4: f32, p_67: vec3<f32>, n_25: vec3<f32>, t_13: f32, trap: ve
     var trap_1: vec4<f32>;
     var color_1: vec3<f32>;
     var amp_4: f32;
-    var r_5: f32;
+    var r_6: f32;
     var y_2: f32;
     var rock1_: vec3<f32> = vec3<f32>(0.1f, 0.09f, 0.08f);
     var rock2_: vec3<f32> = vec3<f32>(0.05f, 0.04f, 0.03f);
@@ -2240,11 +2306,11 @@ fn get_material(id_4: f32, p_67: vec3<f32>, n_25: vec3<f32>, t_13: f32, trap: ve
                     amp_4 = _e64;
                     let _e66 = p_68;
                     let _e70 = noised_value((_e66.xz * 0.01f));
-                    r_5 = _e70.x;
+                    r_6 = _e70.x;
                     let _e73 = p_68;
                     let _e75 = amp_4;
                     y_2 = (_e73.y + _e75);
-                    let _e89 = r_5;
+                    let _e89 = r_6;
                     let _e95 = rock1_;
                     let _e96 = rock2_;
                     let _e98 = p_68;
@@ -2253,12 +2319,12 @@ fn get_material(id_4: f32, p_67: vec3<f32>, n_25: vec3<f32>, t_13: f32, trap: ve
                     color_2 = ((0.9f * ((_e89 * 0.25f) + 0.75f)) * mix(_e95, _e96, vec3(_e106.x)));
                     let _e117 = color_2;
                     let _e118 = dirt;
-                    let _e119 = r_5;
+                    let _e119 = r_6;
                     let _e127 = n_26;
                     color_2 = mix(_e117, (_e118 * ((_e119 * 0.5f) + 0.5f)), vec3(smoothstep(0.75f, 0.9f, _e127.y)));
                     let _e137 = color_2;
                     let _e138 = grass;
-                    let _e139 = r_5;
+                    let _e139 = r_6;
                     let _e147 = n_26;
                     color_2 = mix(_e137, (_e138 * ((_e139 * 0.75f) + 0.25f)), vec3(smoothstep(0.95f, 1f, _e147.y)));
                     let _e153 = amp_4;
@@ -2311,7 +2377,7 @@ fn main_1() {
     var hit_2: vec3<f32>;
     var t_15: f32;
     var material_id: f32;
-    var steps_4: f32;
+    var steps_3: f32;
     var color_3: vec3<f32> = vec3(0f);
     var p_69: vec3<f32>;
     var hit_trap: vec4<f32>;
@@ -2377,7 +2443,7 @@ fn main_1() {
     let _e132 = hit_2;
     material_id = _e132.y;
     let _e135 = hit_2;
-    steps_4 = _e135.z;
+    steps_3 = _e135.z;
     let _e141 = t_15;
     if (_e141 > 0f) {
         {

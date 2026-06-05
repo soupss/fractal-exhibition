@@ -599,9 +599,12 @@ vec3 raymarch_sdf(vec3 ro, vec3 rd, float t_global) {
     float err_candidate = 1e8;
     float id_candidate = MATERIAL_NULL;
 
-    float t_max = 100.0;
+    float t = 0.001;
+    float omega = 1.2;
+    float r_prev = 0.0;
 
-    float pixel_radius = 1.0/u.resolution.y;
+    const float t_max = 400.0;
+    const float pixel_radius = 1.0/u.resolution.y;
 
     float steps = 0.0;
     for (int i = 0; i < 256; i++) {
@@ -609,21 +612,31 @@ vec3 raymarch_sdf(vec3 ro, vec3 rd, float t_global) {
         vec3 p = ro + t_tot*rd;
 
         vec2 hit = map(p);
-
         hit = u_op(hit, map_portals(p));
 
-        float t = hit.x;
+        float r = hit.x;
         float id = hit.y;
+        bool overstep = omega > 1.0 && r + r_prev < t;
 
-        float err = t/(t_global + t_tot); // screen_space
+        if (overstep) {
+            t = -(t - r_prev);
+            omega = 1.0;
+        }
+        else {
+            t = omega * r;
+        }
 
-        if (err < err_candidate) {
+        r_prev = r;
+
+        float err = abs(r/(t_global + t_tot));
+
+        if (!overstep && err < err_candidate) {
             err_candidate = err;
             t_candidate = t_tot;
             id_candidate = id;
         }
 
-        if (err < 1.0*pixel_radius) { //TODO: tune threshold
+        if (!overstep && err < pixel_radius) { //TODO: tune threshold
             break;
         }
 
@@ -634,12 +647,17 @@ vec3 raymarch_sdf(vec3 ro, vec3 rd, float t_global) {
             break;
         }
     }
+    if (err_candidate > pixel_radius * 1.5) t_candidate = -1.0;
     return vec3(t_candidate, id_candidate, steps);
 }
 
 vec3 raymarch_terrain(vec3 ro, vec3 rd) {
     float t = 0.01;
+    float t_candidate = 0.01;
+    float id_candidate = 0.01;
+    float err_candidate = 1e8;
     const float t_max = 1600.0;
+    const float pixel_radius = 1.0/u.resolution.y;
 
     float h_max = get_heightmap_amplitude(world_ray);
 
@@ -697,7 +715,7 @@ vec3 raymarch(vec3 ro, vec3 rd) {
 
         float t = hit.x;
         float id = hit.y;
-        float steps = hit.z;
+        steps = hit.z;
 
         if (t > 0.0) {
             t_res += t;
@@ -837,7 +855,7 @@ vec3 normal(vec3 p, float t) {
 float shadow(vec3 ro, vec3 rd, float d_max) {
     float d = 0.1;
     float occlusion = 1.0;
-    for (int i = 0; i < 128 && d < d_max; i++) {
+    for (int i = 0; i < 256 && d < d_max; i++) {
         vec3 p = ro + rd * d;
         float h = map(p).x;
         if (h < 0.001) return 0.0;
@@ -984,7 +1002,8 @@ vec3 lighting(vec3 p, vec3 n, vec3 v, Material material, float t) {
 
         // float ao = ambient_occlusion(p, n);
         float ao = 1.0;
-        float s = shadow(p, dir_sun, 300.0);
+        vec3 ro_s = p + 0.15*n;
+        float s = shadow(ro_s, dir_sun, 300.0);
         // float s = 1.0;
 
         vec3 light = col_sun*diffuse_sun*s;
@@ -994,7 +1013,7 @@ vec3 lighting(vec3 p, vec3 n, vec3 v, Material material, float t) {
         color = material.albedo * light;
     }
     else {
-        vec3 light_pos = u.camera.pos + vec3(0.0, 5.0, 0.0);
+        vec3 light_pos = u.camera.pos + vec3(0.0, 2.0, 0.0);
         vec3 light_color = vec3(1.0, 1.0, 1.0);
         Light lamp = Light(light_pos, light_color, 500.0);
         vec3 direct = light_direct(p, n, v, lamp, material);

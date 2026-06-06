@@ -665,19 +665,19 @@ vec3 raymarch_terrain(vec3 ro, vec3 rd) {
     const float t_max = 1600.0;
     const float pixel_radius = 1.0/u.resolution.y;
 
-    float h_max = get_heightmap_amplitude(world_ray);
-
-    bool rd_is_up = rd.y > 0.0;
-
+    // float h_max = get_heightmap_amplitude(world_ray);
+    //
+    // bool rd_is_up = rd.y > 0.0;
+    //
     mat2x3 portal = get_portal(world_ray);
-    float h_portal = portal[0].y + PORTAL_HEIGHT;
-
-    h_max = max(h_max, h_portal);
-
-    if (ro.y > h_max && rd_is_up ) return vec3(-1.0);
-    if (ro.y > h_max) {
-        t = max(t, (h_max - ro.y) / rd.y);
-    }
+    // float h_portal = portal[0].y + PORTAL_HEIGHT;
+    //
+    // h_max = max(h_max, h_portal);
+    //
+    // if (ro.y > h_max && rd_is_up ) return vec3(-1.0);
+    // if (ro.y > h_max) {
+    //     t = max(t, (h_max - ro.y) / rd.y);
+    // }
 
     float steps = 0.0;
 

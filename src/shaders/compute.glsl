@@ -691,7 +691,7 @@ vec3 raymarch_terrain(vec3 ro, vec3 rd) {
         float id = hm.w;
 
         float dh = p.y - h;
-        float dt = 0.65*dh/sqrt(1.0+dot(grad, grad));
+        float dt = 0.45*dh/sqrt(1.0+dot(grad, grad));
         // float dt = 0.65*dh;
         // float dt = mix(dt1, dt2, step(sin(10.0*u.t),0.0));
 

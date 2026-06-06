@@ -502,10 +502,16 @@ vec2 map_lavalamp(vec3 p) {
 
     float d_world = min(d_floor, d_roof);
 
-    float y = world_height/2.0 + world_height * 0.7 * sin(2.0*PI*hash(u.t_start) + u.t * 0.6);
-    y = 5.0 + y*0.65;
+    float s = 20.0;
+    vec2 id = round(p.xz/s);
+    p.xz -= s*id;
 
-    float d_blob = sd_sphere(p - vec3(0.0, y, 0.0), 5.0 + 3.0*sin(u.t));
+    float y = world_height/2.0 + world_height * 0.7 * sin(2.0*PI*hash21(id) + u.t * 0.6);
+    y = 5.0 + y*0.65;
+    float d_blob = 1e2;
+    if (id != vec2(-1.0, 0.0)) {
+        d_blob = sd_sphere(p - vec3(0.0, y, 0.0), 5.0 + 3.0*sin(2*PI*hash21(id) + u.t));
+    }
 
     d_world = smin(d_world, d_blob, 0.5);
     return vec2(d_world, MATERIAL_LAVALAMP);
@@ -856,7 +862,7 @@ vec3 normal_numerical(vec3 p, float t) {
 }
 
 vec3 normal_analytical(vec2 p) {
-    vec2 grad = heightmap_mountain_octaves(p, 12).yz;
+    vec2 grad = heightmap_mountain_octaves(p, 11).yz;
     vec3 n = normalize(vec3(-grad.x, 1.0, -grad.y));
     return n;
 }

@@ -195,10 +195,12 @@ vec3 hash33(vec3 p3) {
     return 2.0*fract((p3.xxy + p3.yxx)*p3.zyx) - 1.0;
 }
 
-float smin(float a, float b, float k) {
-    k *= 2.0;
-    float x = b-a;
-    return 0.5*( a+b-sqrt(x*x+k*k) );
+vec2 smin(float a, float b, float k) {
+    float h = 1.0 - min( abs(a-b)/(6.0*k), 1.0 );
+    float w = h*h*h;
+    float m = w*0.5;
+    float s = w*k;
+    return (a<b) ? vec2(a-s,m) : vec2(b-s,1.0-m);
 }
 
 vec2 u_op(vec2 a, vec2 b) {
@@ -489,6 +491,8 @@ vec2 map_fractal(vec3 p) {
 
 //TODO: dont change roof/floor color except blend
 //TODO: more blobs
+Material g_mat_lavalamp = Material(vec3(0.0), 0.0, 0.0);
+
 vec2 map_lavalamp(vec3 p) {
     vec2 res = vec2(1e8, MATERIAL_LAVALAMP);
     float world_height = 20.0;
@@ -496,9 +500,11 @@ vec2 map_lavalamp(vec3 p) {
     p.x -= 35.0;
 
     float d_floor = sd_plane(p, vec3(0.0, 1.0, 0.0));
+    vec3 color_floor = vec3(1.0);
 
     vec3 p_roof = p - vec3(0.0, world_height, 0.0);
     float d_roof = sd_plane(p_roof, vec3(0.0, -1.0, 0.0));
+    vec3 color_roof = vec3(1.0);
 
     float d_world = min(d_floor, d_roof);
 
@@ -506,15 +512,19 @@ vec2 map_lavalamp(vec3 p) {
     vec2 id = round(p.xz/s);
     p.xz -= s*id;
 
-    float y = world_height/2.0 + world_height * 0.7 * sin(2.0*PI*hash21(id) + u.t * 0.6);
+    float y = world_height/2.0 + world_height * 1.0 * sin(2.0*PI*hash21(312.13*id) + u.t * 0.6);
     y = 5.0 + y*0.65;
     float d_blob = 1e2;
     if (id != vec2(-1.0, 0.0)) {
-        d_blob = sd_sphere(p - vec3(0.0, y, 0.0), 5.0 + 3.0*sin(2*PI*hash21(id) + u.t));
+        d_blob = sd_sphere(p - vec3(0.0, y, 0.0), 5.0 + 3.0*sin(2*PI*hash21(7.13*id) + u.t));
     }
+    vec3 color_ball = palette(hash21(17.7*id), vec3(0.5, 0.5, 0.5), vec3(0.5, 0.5, 0.5), vec3(2.0, 1.0, 0.0), vec3(0.50, 0.20, 0.25));
 
-    d_world = smin(d_world, d_blob, 0.5);
-    return vec2(d_world, MATERIAL_LAVALAMP);
+    vec2 blend = smin(d_world, d_blob, 0.5);
+    g_mat_lavalamp.albedo = mix(vec3(1.0), color_ball, blend.y);
+    g_mat_lavalamp.roughness = mix(0.5, 0.0, blend.y);
+    g_mat_lavalamp.metallic = mix(0.4, 0.4, blend.y);
+    return vec2(blend.x, MATERIAL_LAVALAMP);
 }
 
 vec2 map_cloud(vec3 p) {
@@ -609,7 +619,7 @@ vec3 raymarch_sdf(vec3 ro, vec3 rd, float t_global) {
     float omega = 1.2;
     float r_prev = 0.0;
 
-    const float t_max = 400.0;
+    const float t_max = 200.0;
     const float pixel_radius = 1.0/u.resolution.y;
 
     float steps = 0.0;
@@ -1042,7 +1052,8 @@ vec3 lighting(vec3 p, vec3 n, vec3 v, Material material, float t) {
         vec3 direct = light_direct(p, n, v, lamp, material);
 
         vec3 l = normalize(light_pos - p);
-        float s = shadow(p, l, length(light_pos - p));
+        vec3 ro_s = p + 0.15*n;
+        float s = shadow(ro_s, l, length(light_pos - p));
         direct *= s;
 
         float ao = ambient_occlusion(p, n);
@@ -1089,7 +1100,7 @@ Material get_material(float id, vec3 p, vec3 n, float t, vec4 trap) {
     }
     else if (id == MATERIAL_WATER ) return Material(vec3(0.0, 0.0, 1.0), 0.5, 0.5);
     else if (id == MATERIAL_CLOUD ) return Material(vec3(0.8, 0.8, 0.8), 0.5, 0.5);
-    else if (id == MATERIAL_LAVALAMP ) return Material(vec3(1.0, 0.0, 1.0), 0.5, 0.5);
+    else if (id == MATERIAL_LAVALAMP ) return g_mat_lavalamp;
     return Material(vec3(1.0, 0.0 ,1.0), 0.0, 0.0);
 }
 
@@ -1148,6 +1159,5 @@ void main() {
 
     color = pow(color, vec3(1.0 / 2.2)); // gamma correction
 
-    // dithering to reduce color banding
     imageStore(rendertarget, ivec2(x, y), vec4(color, 1.0));
 }
